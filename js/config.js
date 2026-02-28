@@ -30,8 +30,8 @@ const CONFIG = {
   // Allowed users (Google emails)
   ALLOWED_USERS: [
     'rodmwangi@gmail.com'
-    'lonahwanjama13@gmail.com'
-    'levywanke@gmail.com'
+	'lonahwanjama13@gmail.com'
+	'Levywanke@gmail.com'
     // Add Joel and Joshua's emails when they have Google accounts
   ],
 
