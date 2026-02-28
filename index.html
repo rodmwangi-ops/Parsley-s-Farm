@@ -1,0 +1,2678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#2d6a4f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.svg">
+<title>Parsley's Farm</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#f6f3ec;--paper:#fffdf8;--ink:#2e2a24;--ink2:#6a6258;--ink3:#a09888;
+    --g1:#2d6a4f;--g2:#40916c;--g3:#e8f5ee;--g4:#1b4332;
+    --br1:#8B7340;--br2:#6B5530;--br3:#d4c4a8;
+    --border:#c4baa8;--border2:#e0dbd2;
+    --drain-f:#c4dce8;--drain-s:#6aa0b8;
+    --path-f:#ddd0b4;--path-s:#b8a888;
+    --bldg:#8494a4;--bldg2:#c0b090;
+    --gate:#c88a10;
+    --err:#c44;--warn:#e8a020;
+  }
+  body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--ink);overflow:hidden;height:100vh;-webkit-user-select:none;user-select:none}
+
+  /* === TOP BAR === */
+  .bar{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--paper);border-bottom:2px solid var(--border);height:48px;display:flex;align-items:center;padding:0 10px;gap:6px}
+  .logo-mark{display:flex;align-items:center;gap:6px;margin-right:4px}
+  .logo-mark svg{width:28px;height:28px}
+  .logo-mark .lname{font-size:14px;font-weight:800;color:var(--g1);letter-spacing:-.3px;line-height:1}
+  .logo-mark .lsub{font-size:8px;color:var(--br1);font-family:'Space Mono',monospace;letter-spacing:1px}
+  .bar-r{display:flex;gap:3px;align-items:center;margin-left:auto}
+  .btn{background:var(--paper);border:1.5px solid var(--border);color:var(--ink2);padding:4px 10px;border-radius:5px;cursor:pointer;font-family:'Outfit';font-size:11px;font-weight:600;transition:all .12s;white-space:nowrap}
+  .btn:hover{border-color:var(--g1);color:var(--g1)}
+  .btn.act{background:var(--g1);border-color:var(--g1);color:#fff}
+  .sep{width:1px;height:18px;background:var(--border);margin:0 2px}
+  .btn-s{padding:4px 7px}
+  .btn-icon{font-size:14px;padding:3px 7px}
+
+  /* === TAB BAR (bottom nav) === */
+  .tabs{display:none}
+  @media(max-width:768px){
+    .tabs{display:flex;position:fixed;bottom:0;left:0;right:0;height:56px;background:var(--paper);border-top:2px solid var(--border);z-index:100;justify-content:space-around;align-items:stretch;padding:0 4px}
+    .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 8px;cursor:pointer;color:var(--ink3);font-size:9px;font-weight:600;transition:all .15s;flex:1;border-radius:0;position:relative}
+    .tab.act{color:var(--g1)}
+    .tab.act::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2.5px;background:var(--g1);border-radius:0 0 2px 2px}
+    .tab svg,.tab .tab-icon{width:20px;height:20px;font-size:18px;line-height:20px}
+    .mv{bottom:56px !important}
+    .list-view.show{bottom:56px !important}
+    .status{bottom:56px !important}
+    .sales-view{bottom:56px !important}
+    .expenses-view{bottom:56px !important}
+  }
+
+  /* === SALES VIEW === */
+  .sales-view{position:fixed;top:48px;left:0;right:0;bottom:24px;overflow-y:auto;background:var(--bg);display:none;-webkit-overflow-scrolling:touch}
+  .sales-view.show{display:block}
+  .sv-inner{padding:14px;max-width:540px;margin:0 auto}
+
+  .sv-add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:var(--g1);color:#fff;border:none;border-radius:10px;font-family:'Outfit';font-size:15px;font-weight:700;cursor:pointer;transition:background .15s;box-shadow:0 2px 8px rgba(45,106,79,.25);margin-bottom:16px}
+  .sv-add-btn:hover{background:var(--g2)}
+  .sv-add-btn:active{transform:scale(.98)}
+
+  /* Summary cards */
+  .sv-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+  .sv-card{background:var(--paper);border-radius:8px;padding:10px 8px;text-align:center;border:1.5px solid var(--border2);position:relative;overflow:hidden}
+  .sv-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--g2);opacity:.5}
+  .sv-card-amt{font-size:18px;font-weight:800;color:var(--g1);font-family:'Space Mono',monospace;line-height:1.2}
+  .sv-card-label{font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;font-family:'Space Mono',monospace;margin-top:2px}
+  .sv-card-kg{font-size:10px;color:var(--ink2);margin-top:1px;font-family:'Space Mono',monospace}
+
+  /* Section header */
+  .sv-section{font-size:10px;font-weight:700;color:var(--g1);text-transform:uppercase;letter-spacing:1.5px;font-family:'Space Mono',monospace;margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--border2);display:flex;justify-content:space-between;align-items:center}
+  .sv-section .sv-sec-r{color:var(--ink3);font-weight:400;font-size:9px;text-transform:none}
+
+  /* Sales list */
+  .sv-list{display:flex;flex-direction:column;gap:6px}
+  .sv-item{display:flex;align-items:center;gap:10px;background:var(--paper);border:1.5px solid var(--border2);border-radius:8px;padding:10px 12px;cursor:pointer;transition:border-color .12s}
+  .sv-item:hover{border-color:var(--g2)}
+  .sv-item-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+  .sv-item-info{flex:1;min-width:0}
+  .sv-item-crop{font-size:13px;font-weight:700;color:var(--ink)}
+  .sv-item-meta{font-size:10px;color:var(--ink3);font-family:'Space Mono',monospace;margin-top:1px}
+  .sv-item-amt{text-align:right;flex-shrink:0}
+  .sv-item-kes{font-size:14px;font-weight:800;color:var(--g1);font-family:'Space Mono',monospace}
+  .sv-item-pay{font-size:9px;color:var(--ink3);text-transform:uppercase;margin-top:1px}
+  .sv-item-pay.credit{color:var(--warn);font-weight:700}
+
+  /* Credit section */
+  .sv-credit-item{display:flex;align-items:center;gap:10px;background:var(--paper);border:1.5px solid var(--warn);border-radius:8px;padding:10px 12px;margin-bottom:6px}
+  .sv-credit-name{flex:1;font-size:13px;font-weight:700;color:var(--ink)}
+  .sv-credit-owed{font-size:14px;font-weight:800;color:var(--warn);font-family:'Space Mono',monospace}
+  .sv-credit-pay-btn{padding:5px 10px;background:var(--g1);color:#fff;border:none;border-radius:5px;font-family:'Outfit';font-size:10px;font-weight:700;cursor:pointer}
+  .sv-credit-pay-btn:hover{background:var(--g2)}
+  .sv-empty{text-align:center;padding:30px 20px;color:var(--ink3);font-size:13px}
+  .sv-empty-icon{font-size:32px;margin-bottom:8px;opacity:.5}
+
+  /* Delete sale */
+  .sv-item-del{padding:4px 8px;background:none;border:1px solid var(--border2);border-radius:4px;color:var(--ink3);font-size:10px;cursor:pointer;flex-shrink:0;font-family:'Outfit'}
+  .sv-item-del:hover{border-color:var(--err);color:var(--err)}
+
+  /* === SALE MODAL === */
+  .sale-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:300;display:none;align-items:flex-end;justify-content:center}
+  .sale-modal-bg.show{display:flex}
+  @media(min-width:769px){.sale-modal-bg.show{align-items:center}}
+  .sale-modal{background:var(--paper);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:440px;max-height:85vh;overflow-y:auto;box-shadow:0 -4px 30px rgba(0,0,0,.15);-webkit-overflow-scrolling:touch}
+  @media(min-width:769px){.sale-modal{border-radius:12px}}
+  .sale-modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
+  .sale-modal h2{font-size:16px;font-weight:800;color:var(--g1);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .sale-modal .fld{margin-bottom:12px}
+
+  .unit-toggle{display:flex;gap:0;border:1.5px solid var(--border);border-radius:5px;overflow:hidden}
+  .unit-opt{flex:1;padding:7px;text-align:center;cursor:pointer;font-family:'Outfit';font-size:12px;font-weight:600;background:#fff;color:var(--ink2);transition:all .12s;border:none}
+  .unit-opt.act{background:var(--g1);color:#fff}
+
+  .pay-btns{display:flex;gap:6px}
+  .pay-btn{flex:1;padding:10px 6px;text-align:center;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-family:'Outfit';font-size:11px;font-weight:700;background:#fff;color:var(--ink2);transition:all .12s}
+  .pay-btn:hover{border-color:var(--g1)}
+  .pay-btn.act{border-color:var(--g1);background:var(--g3);color:var(--g1)}
+  .pay-btn.act-credit{border-color:var(--warn);background:#fef8e8;color:var(--warn)}
+  .pay-btn .pay-icon{font-size:16px;display:block;margin-bottom:2px}
+
+  .total-display{background:var(--g3);border:2px solid var(--g1);border-radius:8px;padding:12px;text-align:center;margin:10px 0}
+  .total-label{font-size:9px;color:var(--g2);text-transform:uppercase;letter-spacing:1px;font-family:'Space Mono',monospace}
+  .total-amount{font-size:24px;font-weight:900;color:var(--g1);font-family:'Space Mono',monospace}
+
+  .sale-save-btn{width:100%;padding:14px;background:var(--g1);color:#fff;border:none;border-radius:8px;font-family:'Outfit';font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;transition:background .12s}
+  .sale-save-btn:hover{background:var(--g2)}
+  .sale-cancel-btn{width:100%;padding:10px;background:none;color:var(--ink3);border:none;font-family:'Outfit';font-size:12px;cursor:pointer;margin-top:4px}
+
+  /* === PAYMENT MODAL (credit) === */
+  .pay-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:310;display:none;align-items:center;justify-content:center}
+  .pay-modal-bg.show{display:flex}
+  .pay-modal{background:var(--paper);border-radius:12px;padding:20px;width:320px;max-width:90vw;box-shadow:0 10px 40px rgba(0,0,0,.15)}
+  .pay-modal h2{font-size:15px;font-weight:700;color:var(--g1);margin-bottom:12px}
+
+  /* === EXPENSES PLACEHOLDER === */
+  .expenses-view{position:fixed;top:48px;left:0;right:0;bottom:24px;overflow-y:auto;background:var(--bg);display:none}
+  .expenses-view.show{display:block}
+  .exp-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--ink3);text-align:center;padding:40px}
+  .exp-placeholder-icon{font-size:48px;margin-bottom:12px;opacity:.4}
+  .exp-placeholder-text{font-size:14px;font-weight:600}
+
+  /* Navigable summary cards */
+  .sv-card-nav{display:flex;align-items:center;justify-content:space-between;gap:2px}
+  .sv-nav-btn{background:none;border:none;color:var(--g2);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:4px;font-weight:900;line-height:1;opacity:.7;transition:opacity .12s}
+  .sv-nav-btn:hover{opacity:1;background:var(--g3)}
+  .sv-card-range{font-size:8px;color:var(--ink3);font-family:'Space Mono',monospace;margin-top:1px;line-height:1.2}
+
+  /* Farmhand/farm selectors in sale form */
+  .farm-toggle{display:flex;gap:0;border:1.5px solid var(--border);border-radius:5px;overflow:hidden}
+  .farm-opt{flex:1;padding:7px;text-align:center;cursor:pointer;font-family:'Outfit';font-size:12px;font-weight:600;background:#fff;color:var(--ink2);transition:all .12s;border:none}
+  .farm-opt.act{background:var(--g1);color:#fff}
+  .hand-btns{display:flex;gap:6px}
+  .hand-btn{flex:1;padding:8px 4px;text-align:center;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-family:'Outfit';font-size:11px;font-weight:700;background:#fff;color:var(--ink2);transition:all .12s}
+  .hand-btn:hover{border-color:var(--g1)}
+  .hand-btn.act{border-color:var(--g1);background:var(--g3);color:var(--g1)}
+
+  /* Sale item edit button */
+  .sv-item-edit{padding:4px 8px;background:none;border:1px solid var(--border2);border-radius:4px;color:var(--g2);font-size:10px;cursor:pointer;flex-shrink:0;font-family:'Outfit'}
+  .sv-item-edit:hover{border-color:var(--g1);color:var(--g1)}
+  .sv-item-actions{display:flex;gap:4px;flex-shrink:0}
+  .sv-item-who{font-size:9px;color:var(--br1);font-family:'Space Mono',monospace}
+
+  /* PIN Screen */
+  .pin-screen{position:fixed;top:48px;left:0;right:0;bottom:24px;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:95}
+  @media(max-width:768px){.pin-screen{bottom:56px}}
+  .pin-box{background:var(--paper);border:2px solid var(--border);border-radius:12px;padding:28px;text-align:center;width:280px;max-width:85vw;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+  .pin-title{font-size:14px;font-weight:700;color:var(--g1);margin-bottom:4px}
+  .pin-sub{font-size:11px;color:var(--ink3);margin-bottom:16px}
+  .pin-dots{display:flex;justify-content:center;gap:10px;margin-bottom:16px}
+  .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:all .15s}
+  .pin-dot.filled{background:var(--g1);border-color:var(--g1)}
+  .pin-dot.wrong{background:var(--err);border-color:var(--err);animation:shake .4s}
+  .pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto}
+  .pin-key{padding:14px;background:#fff;border:1.5px solid var(--border);border-radius:8px;font-family:'Space Mono',monospace;font-size:18px;font-weight:700;color:var(--ink);cursor:pointer;transition:all .1s;text-align:center}
+  .pin-key:hover{border-color:var(--g1);background:var(--g3)}
+  .pin-key:active{transform:scale(.95)}
+  .pin-key.del{font-size:13px;color:var(--ink3)}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+  /* === SHUGHULI / ACTIVITY LOG === */
+  .shughuli-view{position:fixed;top:48px;left:0;right:0;bottom:24px;overflow-y:auto;background:var(--bg);display:none;-webkit-overflow-scrolling:touch}
+  .shughuli-view.show{display:block}
+  @media(max-width:768px){.shughuli-view{bottom:56px !important}}
+  .sh-inner{padding:14px;max-width:540px;margin:0 auto}
+  .sh-add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:var(--br1);color:#fff;border:none;border-radius:10px;font-family:'Outfit';font-size:15px;font-weight:700;cursor:pointer;transition:background .15s;box-shadow:0 2px 8px rgba(139,115,64,.25);margin-bottom:16px}
+  .sh-add-btn:hover{background:var(--br2)}
+
+  .sh-item{display:flex;gap:10px;background:var(--paper);border:1.5px solid var(--border2);border-radius:8px;padding:10px 12px;margin-bottom:6px}
+  .sh-item-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .sh-type-spray{background:#e8f0ff;color:#4070c0}
+  .sh-type-weed{background:#e8f5ee;color:#2d6a4f}
+  .sh-type-till{background:#f0e8d8;color:#8B7340}
+  .sh-type-observe{background:#fff8e0;color:#c88a10}
+  .sh-type-other{background:#f0eee8;color:#6a6258}
+  .sh-item-info{flex:1;min-width:0}
+  .sh-item-title{font-size:12px;font-weight:700;color:var(--ink)}
+  .sh-item-detail{font-size:11px;color:var(--ink2);margin-top:2px}
+  .sh-item-meta{font-size:9px;color:var(--ink3);font-family:'Space Mono',monospace;margin-top:2px}
+  .sh-item-actions{display:flex;gap:4px;flex-shrink:0;align-items:flex-start}
+  .sh-filter-row{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+
+  /* Activity modal */
+  .act-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:300;display:none;align-items:flex-end;justify-content:center}
+  .act-modal-bg.show{display:flex}
+  @media(min-width:769px){.act-modal-bg.show{align-items:center}}
+  .act-modal{background:var(--paper);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:440px;max-height:85vh;overflow-y:auto;box-shadow:0 -4px 30px rgba(0,0,0,.15);-webkit-overflow-scrolling:touch}
+  @media(min-width:769px){.act-modal{border-radius:12px}}
+
+  .act-type-btns{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+  .act-type-btn{padding:8px 2px;text-align:center;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-family:'Outfit';font-size:9px;font-weight:700;background:#fff;color:var(--ink2);transition:all .12s}
+  .act-type-btn .act-type-icon{font-size:16px;display:block;margin-bottom:2px}
+  .act-type-btn:hover{border-color:var(--g1)}
+  .act-type-btn.act{border-color:var(--g1);background:var(--g3);color:var(--g1)}
+  .act-bed-picker{max-height:120px;overflow-y:auto;border:1px solid var(--border2);border-radius:4px;padding:6px;background:#fff;margin-top:4px}
+
+  /* === MATUMIZI FULL === */
+  .exp-inner{padding:14px;max-width:540px;margin:0 auto}
+  .exp-add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;background:var(--err);color:#fff;border:none;border-radius:10px;font-family:'Outfit';font-size:15px;font-weight:700;cursor:pointer;transition:background .15s;box-shadow:0 2px 8px rgba(204,68,68,.2);margin-bottom:16px}
+  .exp-add-btn:hover{opacity:.9}
+  .exp-cat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:var(--paper);border:1.5px solid var(--border2);border-radius:6px;margin-bottom:4px;font-size:12px}
+  .exp-cat-name{font-weight:600;color:var(--ink)}
+  .exp-cat-amt{font-weight:800;color:var(--err);font-family:'Space Mono',monospace;font-size:13px}
+  .exp-item{display:flex;gap:10px;align-items:center;background:var(--paper);border:1.5px solid var(--border2);border-radius:8px;padding:10px 12px;margin-bottom:6px}
+  .exp-item-cat{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;font-family:'Space Mono',monospace}
+  .exp-item-amt{font-size:14px;font-weight:800;color:var(--err);font-family:'Space Mono',monospace;flex-shrink:0}
+  .exp-item-note{font-size:11px;color:var(--ink2)}
+  .exp-item-date{font-size:9px;color:var(--ink3);font-family:'Space Mono',monospace}
+  .exp-month-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px}
+  .exp-month-label{font-size:14px;font-weight:700;color:var(--g1);min-width:120px;text-align:center}
+
+  /* Expense modal */
+  .exp-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:300;display:none;align-items:flex-end;justify-content:center}
+  .exp-modal-bg.show{display:flex}
+  @media(min-width:769px){.exp-modal-bg.show{align-items:center}}
+  .exp-modal{background:var(--paper);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:440px;max-height:85vh;overflow-y:auto;box-shadow:0 -4px 30px rgba(0,0,0,.15)}
+  @media(min-width:769px){.exp-modal{border-radius:12px}}
+  .exp-cat-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+  .exp-cat-btn{padding:8px 4px;text-align:center;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-family:'Outfit';font-size:10px;font-weight:600;background:#fff;color:var(--ink2);transition:all .12s}
+  .exp-cat-btn:hover{border-color:var(--err)}
+  .exp-cat-btn.act{border-color:var(--err);background:#fef0f0;color:var(--err)}
+
+  /* Crop breakdown overlay */
+  .sv-breakdown{margin-top:6px;background:var(--paper);border:1px solid var(--border2);border-radius:6px;padding:8px;font-size:11px}
+  .sv-bk-row{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(0,0,0,.04)}
+  .sv-bk-crop{display:flex;align-items:center;gap:5px;color:var(--ink)}
+  .sv-bk-vals{font-family:'Space Mono',monospace;font-size:10px;color:var(--g1);font-weight:700}
+  .sv-card-expand{font-size:8px;color:var(--g2);cursor:pointer;margin-top:2px;text-decoration:underline}
+
+  /* Bed activity history */
+  .bed-act{font-size:10px;margin-top:6px;padding:6px 8px;background:var(--bg);border-radius:4px;border-left:3px solid var(--g2)}
+  .bed-act-item{padding:2px 0;border-bottom:1px solid rgba(0,0,0,.04);display:flex;gap:6px;align-items:baseline}
+  .bed-act-date{color:var(--ink3);font-family:'Space Mono',monospace;font-size:9px;flex-shrink:0}
+  .bed-act-type{font-weight:700;color:var(--g1);font-size:9px;text-transform:uppercase;flex-shrink:0}
+  .bed-act-detail{color:var(--ink2)}
+
+  /* === HARVEST & STORAGE === */
+  .sv-btn-row{display:flex;gap:8px;margin-bottom:16px}
+  .sv-btn-row .sv-add-btn{flex:1;margin-bottom:0}
+  .hv-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;background:var(--br1);color:#fff;border:none;border-radius:10px;font-family:'Outfit';font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 2px 8px rgba(139,115,64,.2)}
+  .hv-btn:hover{opacity:.9}
+
+  /* Storage section */
+  .st-item{display:flex;gap:10px;align-items:center;background:var(--paper);border:1.5px solid var(--border2);border-radius:8px;padding:10px 12px;margin-bottom:6px}
+  .st-item-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+  .st-item-info{flex:1;min-width:0}
+  .st-item-crop{font-size:12px;font-weight:700;color:var(--ink)}
+  .st-item-meta{font-size:9px;color:var(--ink3);font-family:'Space Mono',monospace;margin-top:1px}
+  .st-item-qty{font-size:14px;font-weight:800;color:var(--g1);font-family:'Space Mono',monospace;flex-shrink:0}
+  .st-sell-btn{padding:5px 10px;background:var(--g1);color:#fff;border:none;border-radius:5px;font-family:'Outfit';font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0}
+  .st-sell-btn:hover{background:var(--g2)}
+
+  /* Harvest modal */
+  .hv-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:300;display:none;align-items:flex-end;justify-content:center}
+  .hv-modal-bg.show{display:flex}
+  @media(min-width:769px){.hv-modal-bg.show{align-items:center}}
+  .hv-modal{background:var(--paper);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:440px;max-height:85vh;overflow-y:auto;box-shadow:0 -4px 30px rgba(0,0,0,.15);-webkit-overflow-scrolling:touch}
+  @media(min-width:769px){.hv-modal{border-radius:12px}}
+  .hv-dest-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .hv-dest-btn{padding:10px 4px;text-align:center;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-family:'Outfit';font-size:10px;font-weight:700;background:#fff;color:var(--ink2);transition:all .12s}
+  .hv-dest-btn .hv-dest-icon{font-size:18px;display:block;margin-bottom:2px}
+  .hv-dest-btn:hover{border-color:var(--g1)}
+  .hv-dest-btn.act{border-color:var(--g1);background:var(--g3);color:var(--g1)}
+  .hv-crop-detect{font-size:11px;padding:6px 10px;background:var(--g3);border-radius:5px;color:var(--g1);font-weight:600;margin-bottom:10px}
+
+  /* Uproot button */
+  .uproot-btn{width:100%;padding:8px;background:#fff;color:var(--err);border:1.5px solid var(--err);border-radius:5px;cursor:pointer;font-family:'Outfit';font-size:11px;font-weight:700;margin-top:8px;transition:all .12s}
+  .uproot-btn:hover{background:var(--err);color:#fff}
+
+  /* Bed harvest history */
+  .bed-hv{font-size:10px;margin-top:6px;padding:6px 8px;background:var(--bg);border-radius:4px;border-left:3px solid var(--br1)}
+  .bed-hv-item{padding:2px 0;border-bottom:1px solid rgba(0,0,0,.04);display:flex;gap:6px;align-items:baseline}
+  .bed-hv-qty{font-weight:700;color:var(--br1);font-family:'Space Mono',monospace;font-size:9px}
+
+  /* === MAIN VIEWS === */
+  .mv{position:fixed;top:48px;left:0;right:0;bottom:24px;overflow:hidden;cursor:grab;background:var(--bg)}
+  .mv:active{cursor:grabbing}
+  .mv svg{width:100%;height:100%}
+  .mv.hidden{display:none}
+
+  .list-view{position:fixed;top:48px;left:0;right:0;bottom:24px;overflow-y:auto;background:var(--bg);padding:10px;display:none}
+  .list-view.show{display:block}
+
+  /* === LIST VIEW === */
+  .lv-bar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+  .lv-filter{padding:5px 8px;border:1.5px solid var(--border);border-radius:4px;font-family:'Outfit';font-size:11px;background:#fff;color:var(--ink);outline:none}
+  .lv-filter:focus{border-color:var(--g1)}
+  .lv-table{width:100%;border-collapse:collapse;font-size:12px}
+  .lv-table th{text-align:left;padding:6px 8px;font-size:10px;color:var(--g1);text-transform:uppercase;letter-spacing:.5px;font-family:'Space Mono',monospace;border-bottom:2px solid var(--border);cursor:pointer;white-space:nowrap;background:var(--paper);position:sticky;top:0;z-index:2}
+  .lv-table th:hover{color:var(--g4)}
+  .lv-table td{padding:5px 8px;border-bottom:1px solid var(--border2)}
+  .lv-table tr{cursor:pointer;transition:background .1s}
+  .lv-table tr:hover{background:var(--g3)}
+  .lv-table tr.sel{background:var(--g3)}
+  .crop-dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .days-badge{display:inline-block;background:var(--g3);color:var(--g1);padding:1px 5px;border-radius:3px;font-size:10px;font-family:'Space Mono',monospace;font-weight:700}
+
+  /* === PANEL === */
+  .pn{position:fixed;top:48px;right:0;bottom:24px;width:300px;background:var(--paper);border-left:2px solid var(--border);overflow-y:auto;z-index:90;transform:translateX(100%);transition:transform .2s}
+  .pn.open{transform:translateX(0)}
+  @media(max-width:768px){.pn{width:100%;bottom:52px}}
+  .pn-inner{padding:14px}
+  .pn h3{font-size:9px;font-weight:700;color:var(--g1);text-transform:uppercase;letter-spacing:1.5px;margin:14px 0 6px;border-bottom:1px solid var(--border2);padding-bottom:4px}
+  .pn h3:first-child{margin-top:0}
+
+  /* Legend */
+  .lr{display:flex;align-items:center;gap:7px;padding:2.5px 0;font-size:11px}
+  .ls{width:12px;height:8px;border-radius:2px;flex-shrink:0;border:1px solid rgba(0,0,0,.06)}
+
+  /* Stats */
+  .sg{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .stc{background:var(--bg);border-radius:4px;padding:6px;border:1px solid var(--border2);text-align:center}
+  .stc .sn{font-size:16px;font-weight:800;color:var(--g1);font-family:'Space Mono',monospace}
+  .stc .sd{font-size:9px;color:var(--ink3)}
+
+  /* Edit */
+  .edt{background:var(--bg);border-radius:6px;padding:10px;border:1px solid var(--border2);margin-bottom:10px}
+  .edt.hi{border-color:var(--g1);background:var(--g3)}
+  .sel-c{font-size:13px;font-weight:700;color:var(--g1);margin-bottom:4px}
+  .sel-l{font-size:10px;color:var(--ink2);margin-bottom:6px;font-family:'Space Mono',monospace;max-height:50px;overflow-y:auto;line-height:1.5}
+
+  .fld{margin-bottom:10px}
+  .fld label{display:block;font-size:10px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;font-family:'Space Mono',monospace}
+  .fld .opt{font-weight:400;color:var(--ink3);text-transform:none;font-size:9px;letter-spacing:0}
+  .fld select,.fld input,.fld textarea{width:100%;padding:6px 8px;border:1.5px solid var(--border);border-radius:4px;font-family:'Outfit';font-size:12px;color:var(--ink);background:#fff;outline:none}
+  .fld select:focus,.fld input:focus,.fld textarea:focus{border-color:var(--g1)}
+  .fld textarea{resize:vertical;min-height:36px;max-height:70px}
+
+  .drip-btns{display:flex;gap:4px}
+  .drip-btn{flex:1;padding:6px;text-align:center;border:1.5px solid var(--border);border-radius:4px;cursor:pointer;font-family:'Space Mono';font-size:12px;font-weight:700;background:#fff;transition:all .12s}
+  .drip-btn:hover{border-color:var(--g1)}
+  .drip-btn.act{background:var(--g1);border-color:var(--g1);color:#fff}
+
+  .btn-row{display:flex;gap:5px;margin-top:8px}
+  .btn-ap{flex:1;padding:8px;background:var(--g1);color:#fff;border:none;border-radius:5px;cursor:pointer;font-family:'Outfit';font-size:12px;font-weight:700}
+  .btn-ap:hover{background:var(--g2)}
+  .btn-cl{flex:1;padding:8px;background:#fff;color:var(--ink2);border:1.5px solid var(--border);border-radius:5px;cursor:pointer;font-family:'Outfit';font-size:12px;font-weight:600}
+  .btn-cl:hover{border-color:var(--err);color:var(--err)}
+
+  /* Quick select */
+  .qs-grid{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px}
+  .qs-blk{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
+  .qs-blk-name{font-size:10px;font-weight:700;color:var(--ink2);font-family:'Space Mono',monospace;padding:3px 8px;border:1.5px solid var(--border);border-radius:3px;cursor:pointer;background:#fff;text-align:center}
+  .qs-blk-name:hover{border-color:var(--g1);color:var(--g1)}
+  .qs-blk-name.on{background:var(--g1);color:#fff;border-color:var(--g1)}
+  .qs-subs{display:flex;gap:2px}
+  .qs-sub{font-size:9px;padding:2px 5px;border:1px solid var(--border2);border-radius:2px;cursor:pointer;background:#fff;color:var(--ink3);font-family:'Space Mono',monospace}
+  .qs-sub:hover{border-color:var(--g2);color:var(--g2)}
+  .qs-sub.on{background:var(--g2);color:#fff;border-color:var(--g2)}
+
+  /* Individual bed grid (calendar-style) */
+  .qs-beds-panel{margin-top:6px;padding:8px;background:var(--bg);border:1px solid var(--border2);border-radius:6px}
+  .qs-beds-header{font-size:10px;font-weight:700;color:var(--g1);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+  .qs-beds-close{font-size:12px;cursor:pointer;color:var(--ink3);padding:2px 6px;border-radius:3px}
+  .qs-beds-close:hover{background:var(--border2)}
+  .qs-beds-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+  .qs-bed{font-size:10px;padding:5px 2px;text-align:center;border:1.5px solid var(--border);border-radius:4px;cursor:pointer;background:#fff;color:var(--ink2);font-family:'Space Mono',monospace;font-weight:600;transition:all .1s}
+  .qs-bed:hover{border-color:var(--g1);color:var(--g1)}
+  .qs-bed.on{background:var(--g1);color:#fff;border-color:var(--g1)}
+  .qs-bed.planted{border-color:var(--g2);opacity:.9}
+
+  /* Expandable shughuli items */
+  .sh-item{display:flex;gap:10px;background:var(--paper);border:1.5px solid var(--border2);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:border-color .12s}
+  .sh-item:hover{border-color:var(--g2)}
+  .sh-item-expand{display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border2)}
+  .sh-item-expand.show{display:block}
+  .sh-item-beds{font-size:10px;color:var(--ink2);margin-bottom:6px;line-height:1.5}
+  .sh-item-edit-btn{display:inline-flex;align-items:center;gap:4px;padding:6px 14px;background:var(--br1);color:#fff;border:none;border-radius:5px;cursor:pointer;font-family:'Outfit';font-size:11px;font-weight:700}
+
+  /* Add crop modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:300;display:none;align-items:center;justify-content:center}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--paper);border-radius:10px;padding:20px;width:320px;max-width:90vw;box-shadow:0 10px 40px rgba(0,0,0,.15)}
+  .modal h2{font-size:16px;font-weight:700;color:var(--g1);margin-bottom:12px}
+  .color-grid{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+  .color-opt{width:28px;height:28px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:border .12s}
+  .color-opt:hover{border-color:var(--ink)}
+  .color-opt.sel{border-color:var(--g4);box-shadow:0 0 0 2px var(--g3)}
+
+  /* Bed info */
+  .bi{font-size:11px;line-height:1.7}
+  .bi-r{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(0,0,0,.04)}
+  .bi-l{color:var(--ink3);font-family:'Space Mono',monospace;font-size:9px;text-transform:uppercase}
+  .bi-v{font-weight:600}
+  .bi-days{display:inline-block;background:var(--g3);color:var(--g1);padding:1px 6px;border-radius:3px;font-weight:700;font-size:10px;font-family:'Space Mono',monospace}
+  .bi-note{margin-top:6px;padding:6px 8px;background:var(--bg);border-radius:4px;font-size:11px;color:var(--ink2);border-left:3px solid var(--warn)}
+
+  .tip{position:fixed;display:none;background:var(--paper);border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:11px;pointer-events:none;z-index:200;max-width:210px;box-shadow:0 3px 14px rgba(0,0,0,.1)}
+  .tip .t1{font-weight:700;color:var(--g1);margin-bottom:2px}
+  .tip .t2{color:var(--gate);font-style:italic;font-size:10px;margin-top:2px}
+  .tip .td{font-family:'Space Mono',monospace;font-size:9px;color:var(--g1);margin-top:1px}
+
+  .status{position:fixed;bottom:0;left:0;right:0;height:24px;background:var(--paper);border-top:1px solid var(--border2);display:flex;align-items:center;padding:0 14px;font-size:10px;color:var(--ink3);font-family:'Space Mono',monospace;z-index:80}
+  .status .ok{color:var(--g1);font-weight:700}
+  /* === LOGIN SCREEN === */
+  .login-screen{position:fixed;inset:0;z-index:999;background:linear-gradient(135deg,#2d6a4f 0%,#1b4332 50%,#8B7340 100%);display:flex;align-items:center;justify-content:center;transition:opacity .4s,visibility .4s}
+  .login-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+  .login-box{text-align:center;padding:40px 30px;max-width:340px;width:90%}
+  .login-logo{font-size:64px;margin-bottom:16px}
+  .login-box h1{font-size:28px;font-weight:900;color:#fff;margin-bottom:4px;letter-spacing:-.5px}
+  .login-box .login-sub{font-size:13px;color:rgba(255,255,255,.7);margin-bottom:32px}
+  .login-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px 20px;background:#fff;color:#333;border:none;border-radius:8px;font-family:'Outfit';font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,.2);transition:transform .12s}
+  .login-btn:hover{transform:scale(1.02)}
+  .login-btn img{width:20px;height:20px}
+  .login-note{font-size:10px;color:rgba(255,255,255,.45);margin-top:20px}
+  .login-offline{display:none;margin-top:16px;padding:12px 20px;background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.3);border-radius:8px;font-family:'Outfit';font-size:13px;font-weight:600;cursor:pointer}
+  .login-offline:hover{background:rgba(255,255,255,.25)}
+
+  /* === SYNC STATUS === */
+  .sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:3px}
+  .sync-dot.ok{background:#4caf50}
+  .sync-dot.syncing{background:#ff9800;animation:pulse 1s infinite}
+  .sync-dot.error{background:#f44336}
+  .sync-dot.offline{background:#9e9e9e}
+  .sync-status{font-size:9px;color:var(--ink3);font-family:'Space Mono',monospace;display:flex;align-items:center;gap:2px;cursor:pointer;padding:4px 6px;border-radius:4px}
+  .sync-status:hover{background:var(--bg)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* === USER DISPLAY === */
+  .user-pill{display:flex;align-items:center;gap:5px;padding:3px 8px 3px 3px;background:var(--bg);border-radius:20px;font-size:10px;font-weight:600;color:var(--ink2);cursor:pointer;border:1px solid var(--border2)}
+  .user-pill:hover{border-color:var(--g1)}
+  .user-pill img{width:22px;height:22px;border-radius:50%;border:1px solid var(--border2)}
+  .user-pill .user-initial{width:22px;height:22px;border-radius:50%;background:var(--g1);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800}
+  .user-menu{position:absolute;top:46px;right:10px;background:var(--paper);border:1.5px solid var(--border);border-radius:8px;box-shadow:0 4px 15px rgba(0,0,0,.1);padding:6px;min-width:180px;display:none;z-index:200}
+  .user-menu.show{display:block}
+  .user-menu-item{padding:8px 12px;font-size:12px;color:var(--ink);cursor:pointer;border-radius:5px;display:flex;align-items:center;gap:8px}
+  .user-menu-item:hover{background:var(--bg)}
+  .user-menu-email{padding:8px 12px;font-size:10px;color:var(--ink3);font-family:'Space Mono',monospace;border-bottom:1px solid var(--border2);margin-bottom:4px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">🌿</div>
+    <h1>Parsley's Farm</h1>
+    <div class="login-sub">Shamba la Parsley — Kajiado County, 2.6 acres</div>
+    <button class="login-btn" id="loginBtn" onclick="Auth.signIn()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
+      Sign in with Google
+    </button>
+    <button class="login-offline" id="offlineBtn" onclick="enterOffline()">
+      Continue Offline / Endelea bila mtandao
+    </button>
+    <div class="login-note">v3.1 · Authorized users only</div>
+  </div>
+</div>
+
+<!-- TOP BAR -->
+<div class="bar">
+  <div class="logo-mark">
+    <svg viewBox="0 0 40 40"><rect x="8" y="18" width="16" height="14" rx="1" fill="#8B7340"/><polygon points="7,19.5 16,9 25,19.5" fill="#6B5530"/><rect x="13" y="23" width="6" height="9" rx=".5" fill="#3a2e1a"/><circle cx="16" cy="15.5" r="2" fill="#e8dcc4" opacity=".6"/><g transform="translate(23,12)"><path d="M0,20 Q1,12 -1,6 Q-2,2 1,1 Q3,3 2,8 Q1,14 2,18" fill="none" stroke="#2d6a4f" stroke-width="1.2"/><ellipse cx="-1.5" cy="5" rx="3" ry="2" fill="#2d6a4f" transform="rotate(-25,-1.5,5)"/><ellipse cx="1.5" cy="9" rx="3" ry="2" fill="#40916c" transform="rotate(15,1.5,9)"/><ellipse cx="0" cy="1.5" rx="2.5" ry="1.8" fill="#2d6a4f" transform="rotate(-10,0,1.5)"/></g></svg>
+    <div><div class="lname">Parsley's Farm</div><div class="lsub">KAJIADO</div></div>
+  </div>
+  <div class="bar-r">
+    <button class="btn act" id="vMap" onclick="showView('map')">🗺 Map</button>
+    <button class="btn" id="vList" onclick="showView('list')">☰ List</button>
+    <button class="btn" id="vSales" onclick="switchTab('sales')">💰 Mauzo</button>
+    <button class="btn" id="vShughuli" onclick="switchTab('shughuli')">🌿 Shughuli</button>
+    <button class="btn" id="vExpenses" onclick="switchTab('expenses')">🔒 Matumizi</button>
+    <div class="sep"></div>
+    <button class="btn btn-s act" id="vA" onclick="setView('A')">A</button>
+    <button class="btn btn-s" id="vB" onclick="setView('B')">B</button>
+    <button class="btn btn-s" id="vAll" onclick="setView('all')">All</button>
+    <div class="sep"></div>
+    <button class="btn btn-s" onclick="zi()">+</button>
+    <button class="btn btn-s" onclick="zo()">−</button>
+    <div class="sync-status" id="syncStatus" onclick="manualSync()" title="Click to sync"><span class="sync-dot offline" id="syncDot"></span><span id="syncMsg">Offline</span></div>
+    <div class="user-pill" id="userPill" onclick="toggleUserMenu()" style="display:none">
+      <span class="user-initial" id="userInitial">?</span>
+      <span id="userName">...</span>
+    </div>
+    <button class="btn btn-s" onclick="togglePanel()">⚙</button>
+  </div>
+  <div class="user-menu" id="userMenu">
+    <div class="user-menu-email" id="userMenuEmail">—</div>
+    <div class="user-menu-item" onclick="manualSync()">🔄 Sync Now / Sync Sasa</div>
+    <div class="user-menu-item" onclick="Auth.signOut()">🚪 Sign Out / Toka</div>
+  </div>
+</div>
+
+<!-- MAP VIEW -->
+<div class="mv" id="mv"><svg id="S" xmlns="http://www.w3.org/2000/svg"></svg></div>
+
+<!-- LIST VIEW -->
+<div class="list-view" id="listView">
+  <div class="lv-bar">
+    <select class="lv-filter" id="lvFarm" onchange="renderList()"><option value="">All Farms</option><option value="A">Farm A</option><option value="B">Farm B</option></select>
+    <select class="lv-filter" id="lvBlock" onchange="renderList()"><option value="">All Blocks</option></select>
+    <select class="lv-filter" id="lvCrop" onchange="renderList()"><option value="">All Crops</option></select>
+    <input class="lv-filter" id="lvSearch" placeholder="Search..." style="width:120px" oninput="renderList()">
+  </div>
+  <table class="lv-table"><thead><tr>
+    <th onclick="sortList('block')">Block</th>
+    <th onclick="sortList('sub')">Sub</th>
+    <th onclick="sortList('num')">Bed</th>
+    <th onclick="sortList('crop')">Crop / Zao</th>
+    <th onclick="sortList('days')">Days</th>
+    <th onclick="sortList('drip')">Drip</th>
+  </tr></thead><tbody id="lvBody"></tbody></table>
+</div>
+
+<!-- SIDE PANEL -->
+<div class="pn" id="pn"><div class="pn-inner" id="pnInner"></div></div>
+
+<!-- TOOLTIP -->
+<div class="tip" id="tip"></div>
+
+<!-- SALES VIEW -->
+<div class="sales-view" id="salesView">
+  <div class="sv-inner" id="svInner"></div>
+</div>
+
+<!-- SHUGHULI / ACTIVITY LOG VIEW -->
+<div class="shughuli-view" id="shughuliView">
+  <div class="sh-inner" id="shInner"></div>
+</div>
+
+<!-- EXPENSES VIEW (PIN protected) -->
+<div class="expenses-view" id="expensesView">
+  <!-- PIN Screen -->
+  <div class="pin-screen" id="pinScreen">
+    <div class="pin-box">
+      <div class="pin-title">🔒 Matumizi / Expenses</div>
+      <div class="pin-sub">Enter PIN to access / Weka PIN kuingia</div>
+      <div class="pin-dots" id="pinDots">
+        <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
+      </div>
+      <div class="pin-pad">
+        <div class="pin-key" onclick="pinKey('1')">1</div>
+        <div class="pin-key" onclick="pinKey('2')">2</div>
+        <div class="pin-key" onclick="pinKey('3')">3</div>
+        <div class="pin-key" onclick="pinKey('4')">4</div>
+        <div class="pin-key" onclick="pinKey('5')">5</div>
+        <div class="pin-key" onclick="pinKey('6')">6</div>
+        <div class="pin-key" onclick="pinKey('7')">7</div>
+        <div class="pin-key" onclick="pinKey('8')">8</div>
+        <div class="pin-key" onclick="pinKey('9')">9</div>
+        <div class="pin-key" style="visibility:hidden"></div>
+        <div class="pin-key" onclick="pinKey('0')">0</div>
+        <div class="pin-key del" onclick="pinDel()">⌫</div>
+      </div>
+    </div>
+  </div>
+  <!-- Actual expenses content -->
+  <div id="expContent" style="display:none">
+    <div class="exp-inner" id="expInner"></div>
+  </div>
+</div>
+
+<!-- BOTTOM TABS (mobile) -->
+<div class="tabs" id="bottomTabs">
+  <div class="tab act" id="tabMap" onclick="switchTab('map')">
+    <span class="tab-icon">🗺</span><span>Ramani</span>
+  </div>
+  <div class="tab" id="tabSales" onclick="switchTab('sales')">
+    <span class="tab-icon">💰</span><span>Mauzo</span>
+  </div>
+  <div class="tab" id="tabShughuli" onclick="switchTab('shughuli')">
+    <span class="tab-icon">🌿</span><span>Shughuli</span>
+  </div>
+  <div class="tab" id="tabExpenses" onclick="switchTab('expenses')">
+    <span class="tab-icon">🔒</span><span>Matumizi</span>
+  </div>
+</div>
+
+<!-- STATUS -->
+<div class="status" id="statusBar">Bonyeza kitanda kuhariri · Shift+click to multi-select</div>
+
+<!-- ADD CROP MODAL -->
+<div class="modal-bg" id="cropModal">
+  <div class="modal">
+    <h2>+ Add New Crop / Ongeza Zao Jipya</h2>
+    <div class="fld"><label>Name (English)</label><input id="ncNameEn" placeholder="e.g. Tomatoes"></div>
+    <div class="fld"><label>Jina (Kiswahili) <span class="opt">optional</span></label><input id="ncNameSw" placeholder="e.g. Nyanya"></div>
+    <div class="fld"><label>Color / Rangi</label>
+      <div class="color-grid" id="colorGrid"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-ap" onclick="addNewCrop()">Add Crop / Ongeza</button>
+      <button class="btn-cl" onclick="closeCropModal()">Cancel / Ghairi</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW SALE MODAL -->
+<div class="sale-modal-bg" id="saleModal">
+  <div class="sale-modal">
+    <div class="sale-modal-handle"></div>
+    <h2 id="saleModalTitle">💰 New Sale / Uza</h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="fld">
+        <label>Date / Tarehe</label>
+        <input type="date" id="sDate">
+      </div>
+      <div class="fld">
+        <label>Farm / Shamba</label>
+        <div class="farm-toggle" id="sFarmToggle">
+          <div class="farm-opt act" data-farm="A" onclick="setFarm('A',this)">A</div>
+          <div class="farm-opt" data-farm="B" onclick="setFarm('B',this)">B</div>
+          <div class="farm-opt" data-farm="Both" onclick="setFarm('Both',this)">Both</div>
+          <div class="farm-opt" data-farm="Home" onclick="setFarm('Home',this)">Home</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fld">
+      <label>Recorded By / Alirekodi</label>
+      <div class="hand-btns" id="sHandBtns">
+        <div class="hand-btn act" data-hand="Rod" onclick="setHand('Rod',this)">Rod</div>
+        <div class="hand-btn" data-hand="Joel" onclick="setHand('Joel',this)">Joel</div>
+        <div class="hand-btn" data-hand="Joshua" onclick="setHand('Joshua',this)">Joshua</div>
+      </div>
+    </div>
+
+    <div class="fld">
+      <label>Crop / Zao</label>
+      <select id="sCrop">
+        <option value="">— Select crop —</option>
+      </select>
+    </div>
+
+    <div class="fld">
+      <label>Unit / Kipimo</label>
+      <div class="unit-toggle" id="sUnitToggle">
+        <div class="unit-opt act" data-unit="kg" onclick="setUnit('kg',this)">Kg</div>
+        <div class="unit-opt" data-unit="pcs" onclick="setUnit('pcs',this)">Pieces / Vipande</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="fld">
+        <label>Quantity / Kiasi <span id="sUnitLabel">(kg)</span></label>
+        <input type="number" id="sQty" placeholder="0" min="0" step="0.5" oninput="calcTotal()">
+      </div>
+      <div class="fld">
+        <label>Price per <span id="sPriceLabel">kg</span> (KES)</label>
+        <input type="number" id="sPrice" placeholder="0" min="0" oninput="calcTotal()">
+      </div>
+    </div>
+
+    <div class="total-display">
+      <div class="total-label">Total / Jumla (KES)</div>
+      <div class="total-amount" id="sTotal">0</div>
+    </div>
+
+    <div class="fld">
+      <label>Buyer / Mnunuzi <span class="opt">(optional)</span></label>
+      <input type="text" id="sBuyer" placeholder="Jina la mnunuzi..." list="buyerList" autocomplete="off">
+      <datalist id="buyerList"></datalist>
+    </div>
+
+    <div class="fld">
+      <label>Payment / Malipo</label>
+      <div class="pay-btns">
+        <div class="pay-btn act" data-pay="cash" onclick="setPay('cash',this)"><span class="pay-icon">💵</span>Cash / Taslimu</div>
+        <div class="pay-btn" data-pay="mpesa" onclick="setPay('mpesa',this)"><span class="pay-icon">📱</span>M-Pesa</div>
+        <div class="pay-btn" data-pay="credit" onclick="setPay('credit',this)"><span class="pay-icon">📝</span>Credit / Deni</div>
+      </div>
+      <div id="sCreditNote" style="display:none;margin-top:6px;padding:6px 8px;background:#fef8e8;border-radius:4px;font-size:10px;color:var(--warn);border:1px solid var(--warn)">⚠ Buyer name required for credit sales</div>
+    </div>
+
+    <button class="sale-save-btn" onclick="saveSale()">Save Sale / Hifadhi Mauzo</button>
+    <button class="sale-cancel-btn" onclick="closeSaleModal()">Cancel / Ghairi</button>
+  </div>
+</div>
+
+<!-- CREDIT PAYMENT MODAL -->
+<div class="pay-modal-bg" id="payModal">
+  <div class="pay-modal">
+    <h2>Record Payment / Lipa Deni</h2>
+    <div id="payModalBuyer" style="font-size:13px;font-weight:700;margin-bottom:8px"></div>
+    <div id="payModalOwed" style="font-size:12px;color:var(--warn);margin-bottom:12px;font-family:'Space Mono',monospace"></div>
+    <div class="fld">
+      <label>Amount Paid / Kiasi (KES)</label>
+      <input type="number" id="payAmt" placeholder="0" min="0">
+    </div>
+    <div class="fld">
+      <label>Method / Njia</label>
+      <div class="pay-btns">
+        <div class="pay-btn act" data-pay="cash" onclick="setPayMethod('cash',this)"><span class="pay-icon">💵</span>Cash</div>
+        <div class="pay-btn" data-pay="mpesa" onclick="setPayMethod('mpesa',this)"><span class="pay-icon">📱</span>M-Pesa</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-ap" onclick="recordPayment()">Record / Hifadhi</button>
+      <button class="btn-cl" onclick="closePayModal()">Cancel / Ghairi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTIVITY MODAL -->
+<div class="act-modal-bg" id="actModal">
+  <div class="act-modal">
+    <div class="sale-modal-handle"></div>
+    <h2 id="actModalTitle">🌿 New Activity / Shughuli Mpya</h2>
+
+    <div class="fld">
+      <label>Activity Type / Aina</label>
+      <div class="act-type-btns" id="actTypeBtns">
+        <div class="act-type-btn act" data-type="spray" onclick="setActType('spray',this)"><span class="act-type-icon">🧪</span>Spray<br>Dawa</div>
+        <div class="act-type-btn" data-type="weed" onclick="setActType('weed',this)"><span class="act-type-icon">🌾</span>Weed<br>Palilia</div>
+        <div class="act-type-btn" data-type="till" onclick="setActType('till',this)"><span class="act-type-icon">⛏</span>Till<br>Lima</div>
+        <div class="act-type-btn" data-type="observe" onclick="setActType('observe',this)"><span class="act-type-icon">👁</span>Observe<br>Angalia</div>
+        <div class="act-type-btn" data-type="other" onclick="setActType('other',this)"><span class="act-type-icon">📋</span>Other<br>Nyingine</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="fld">
+        <label>Date / Tarehe</label>
+        <input type="date" id="actDate">
+      </div>
+      <div class="fld">
+        <label>Done By / Alifanya</label>
+        <div class="hand-btns" id="actHandBtns">
+          <div class="hand-btn act" data-hand="Rod" onclick="setActHand('Rod',this)">Rod</div>
+          <div class="hand-btn" data-hand="Joel" onclick="setActHand('Joel',this)">Joel</div>
+          <div class="hand-btn" data-hand="Joshua" onclick="setActHand('Joshua',this)">Joshua</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="actBedsSection">
+      <div class="fld">
+        <label>Where / Wapi — pick block, sub or beds</label>
+        <div id="actBedPicker" class="act-bed-picker"></div>
+      </div>
+    </div>
+
+    <div id="actSprayFields" style="display:block">
+      <div class="fld">
+        <label>Product / Dawa</label>
+        <input type="text" id="actProduct" placeholder="e.g. Nativo, Spirometer..." list="productList" autocomplete="off">
+        <datalist id="productList"></datalist>
+      </div>
+      <div class="fld">
+        <label>Rate / Kiwango <span class="opt">(optional)</span></label>
+        <input type="text" id="actRate" placeholder="e.g. 10ml/20L">
+      </div>
+    </div>
+
+    <div class="fld">
+      <label>Details / Maelezo <span class="opt">(optional)</span></label>
+      <textarea id="actDetails" placeholder="Describe what was done..."></textarea>
+    </div>
+
+    <button class="sale-save-btn" style="background:var(--br1)" onclick="saveActivity()">Save Activity / Hifadhi</button>
+    <button class="sale-cancel-btn" onclick="closeActModal()">Cancel / Ghairi</button>
+  </div>
+</div>
+
+<!-- EXPENSE MODAL -->
+<div class="exp-modal-bg" id="expModal">
+  <div class="exp-modal">
+    <div class="sale-modal-handle"></div>
+    <h2 id="expModalTitle">📊 New Expense / Matumizi Mapya</h2>
+
+    <div class="fld">
+      <label>Category / Aina</label>
+      <div class="exp-cat-btns" id="expCatBtns">
+        <div class="exp-cat-btn act" data-cat="seeds" onclick="setExpCat('seeds',this)">🌱 Mbegu<br>Seeds</div>
+        <div class="exp-cat-btn" data-cat="fertilizer" onclick="setExpCat('fertilizer',this)">🧪 Mbolea<br>Fertilizer</div>
+        <div class="exp-cat-btn" data-cat="chemicals" onclick="setExpCat('chemicals',this)">💊 Dawa<br>Chemicals</div>
+        <div class="exp-cat-btn" data-cat="labor" onclick="setExpCat('labor',this)">👷 Vibarua<br>Labor</div>
+        <div class="exp-cat-btn" data-cat="water" onclick="setExpCat('water',this)">💧 Maji<br>Water</div>
+        <div class="exp-cat-btn" data-cat="transport" onclick="setExpCat('transport',this)">🚛 Usafiri<br>Transport</div>
+        <div class="exp-cat-btn" data-cat="equipment" onclick="setExpCat('equipment',this)">🔧 Vifaa<br>Equipment</div>
+        <div class="exp-cat-btn" data-cat="lease" onclick="setExpCat('lease',this)">📄 Kodi<br>Lease</div>
+        <div class="exp-cat-btn" data-cat="other" onclick="setExpCat('other',this)">📦 Nyingine<br>Other</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="fld">
+        <label>Date / Tarehe</label>
+        <input type="date" id="expDate">
+      </div>
+      <div class="fld">
+        <label>Amount / Kiasi (KES)</label>
+        <input type="number" id="expAmount" placeholder="0" min="0">
+      </div>
+    </div>
+
+    <div class="fld">
+      <label>Note / Maelezo <span class="opt">(optional)</span></label>
+      <textarea id="expNote" placeholder="e.g. Bought Nativo 100ml..."></textarea>
+    </div>
+
+    <button class="sale-save-btn" style="background:var(--err)" onclick="saveExpense()">Save Expense / Hifadhi</button>
+    <button class="sale-cancel-btn" onclick="closeExpModal()">Cancel / Ghairi</button>
+  </div>
+</div>
+
+<!-- HARVEST MODAL -->
+<div class="hv-modal-bg" id="hvModal">
+  <div class="hv-modal">
+    <div class="sale-modal-handle"></div>
+    <h2>🌾 Harvest / Vuna</h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="fld">
+        <label>Date / Tarehe</label>
+        <input type="date" id="hvDate">
+      </div>
+      <div class="fld">
+        <label>Harvested By / Alivuna</label>
+        <div class="hand-btns" id="hvHandBtns">
+          <div class="hand-btn act" data-hand="Rod" onclick="setHvHand('Rod',this)">Rod</div>
+          <div class="hand-btn" data-hand="Joel" onclick="setHvHand('Joel',this)">Joel</div>
+          <div class="hand-btn" data-hand="Joshua" onclick="setHvHand('Joshua',this)">Joshua</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fld">
+      <label>From Beds / Kutoka Vitanda</label>
+      <div id="hvBedPicker" class="act-bed-picker"></div>
+    </div>
+
+    <div id="hvCropDetect"></div>
+
+    <div class="fld" id="hvCropOverride" style="display:none">
+      <label>Crop / Zao (override)</label>
+      <select id="hvCropSel"></select>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="fld">
+        <label>Quantity / Kiasi</label>
+        <input type="number" id="hvQty" placeholder="0" min="0" step="0.5">
+      </div>
+      <div class="fld">
+        <label>Unit / Kipimo</label>
+        <div class="unit-toggle" id="hvUnitToggle">
+          <div class="unit-opt act" data-unit="kg" onclick="setHvUnit('kg',this)">Kg</div>
+          <div class="unit-opt" data-unit="pcs" onclick="setHvUnit('pcs',this)">Pieces</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fld">
+      <label>Destination / Mahali</label>
+      <div class="hv-dest-btns" id="hvDestBtns">
+        <div class="hv-dest-btn act" data-dest="sell" onclick="setHvDest('sell',this)"><span class="hv-dest-icon">💰</span>Sell Now<br>Uza Sasa</div>
+        <div class="hv-dest-btn" data-dest="store" onclick="setHvDest('store',this)"><span class="hv-dest-icon">📦</span>Store<br>Hifadhi</div>
+        <div class="hv-dest-btn" data-dest="home" onclick="setHvDest('home',this)"><span class="hv-dest-icon">🏠</span>Home<br>Nyumbani</div>
+      </div>
+    </div>
+
+    <div class="fld">
+      <label>Notes / Maoni <span class="opt">(optional)</span></label>
+      <textarea id="hvNotes" placeholder="e.g. Quality good, some damaged..."></textarea>
+    </div>
+
+    <button class="sale-save-btn" style="background:var(--br1)" onclick="saveHarvest()">Save Harvest / Hifadhi Mavuno</button>
+    <button class="sale-cancel-btn" onclick="closeHvModal()">Cancel / Ghairi</button>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/sync.js"></script>
+<script>
+// ================================================================
+// CROPS — bilingual, extensible
+// ================================================================
+let CROPS={
+  none:           {c:'#d8ccb0',n:'— Empty —',sw:'— Tupu —',p:false},
+  onion_seedbed:  {c:'#d4a020',n:'Onion Seedbed',sw:'Kitalu cha Vitunguu',p:true},
+  onions:         {c:'#c49428',n:'Onions',sw:'Vitunguu',p:true},
+  spinach:        {c:'#4a9a5e',n:'Spinach',sw:'Mchicha',p:true},
+  old_spinach:    {c:'#7a9050',n:'Spinach (Old)',sw:'Mchicha (Zamani)',p:true},
+  kale:           {c:'#2e8a54',n:'Kale',sw:'Sukuma Wiki',p:true},
+  nightshade:     {c:'#7a5ea0',n:'Nightshade',sw:'Managu',p:true},
+  sweet_potatoes: {c:'#c06a3a',n:'Sweet Potatoes',sw:'Viazi Vitamu',p:true},
+  sk_seedbed:     {c:'#48b890',n:'Spinach+Kale Seedbed',sw:'Kitalu Mchicha+Sukuma',p:true},
+  okra_seedbed:   {c:'#8ab83e',n:'Okra Seedbed',sw:'Kitalu cha Bamia',p:true},
+  cowpeas:        {c:'#9a7838',n:'Cow Peas',sw:'Kunde',p:true},
+  cassava:        {c:'#d07838',n:'Cassava',sw:'Muhogo',p:true},
+  spider_plant:   {c:'#2a9a8e',n:'Spider Plant',sw:'Saga',p:true},
+  coriander:      {c:'#78b84a',n:'Coriander',sw:'Dhania',p:true},
+  capsicum:       {c:'#1a8860',n:'Green Capsicum',sw:'Pilipili Hoho',p:true},
+  tomatoes:       {c:'#c44040',n:'Tomatoes',sw:'Nyanya',p:true},
+  beans:          {c:'#8a7040',n:'Beans',sw:'Maharagwe',p:true},
+  maize:          {c:'#c8b040',n:'Maize',sw:'Mahindi',p:true},
+  watermelon:     {c:'#e05060',n:'Watermelon',sw:'Tikiti Maji',p:true},
+  uncultivated:   {c:'#c8b898',n:'Uncultivated',sw:'Haijalimwa',p:false},
+};
+
+const CROP_COLORS=['#c44040','#d07838','#d4a020','#c8b040','#8ab83e','#78b84a','#4a9a5e','#2e8a54','#1a8860','#2a9a8e','#48b890','#40916c','#7a5ea0','#9a50a0','#c06a8a','#8a7040','#5a8a40','#40708a','#6a6258','#c88a10'];
+
+// ================================================================
+// LAYOUT (identical to v6)
+// ================================================================
+const WF=50;
+const FA_L=WF,FA_R=WF+1100,FA_T=950,FA_B=1530;
+const FA_PAD_N=55,FA_PAD_S=55,EPA_W=35,EPA_L=FA_R-EPA_W;
+const A1W=250,P12W=20,A2W=205,D23W=32,A3W=210,P34W=20,A4W=290;
+const A1_R=EPA_L,A1_L=A1_R-A1W,P12_R=A1_L,P12_L=P12_R-P12W;
+const A2_R=P12_L,A2_L=A2_R-A2W,D23_R=A2_L,D23_L=D23_R-D23W;
+const A3_R=D23_L,A3_L=A3_R-A3W,P34_R=A3_L,P34_L=P34_R-P34W;
+const A4_R=P34_L,A4_L=A4_R-A4W;
+const BZ=70,A1_BT=FA_T+FA_PAD_N+BZ+12,A_BT=FA_T+FA_PAD_N;
+const A_BB=FA_B-FA_PAD_S,A1_BB=A_BB,A1_BS=A1_BB-A1_BT,A_BS=A_BB-A_BT;
+const FB_L=WF,FB_R=P12_R,FB_B=FA_T-10,FB_H=920,FB_T=FB_B-FB_H;
+const BM_E=28,FBW=FB_R-FB_L;
+const B_BW=Math.floor((FBW-BM_E-48-20)/3);
+const PD_PATH_W=20,PD_DRAIN_W=28,PD_W=PD_PATH_W+PD_DRAIN_W,P23_W2=20;
+const B1_R2=FB_R-BM_E,B1_L2=B1_R2-B_BW,PD_R=B1_L2,PD_L=PD_R-PD_W;
+const B2_R2=PD_L,B2_L2=B2_R2-B_BW,P23_R2=B2_L2,P23_L2=P23_R2-P23_W2;
+const B3_R2=P23_L2,B3_L2=B3_R2-B_BW;
+const FB_PAD_S=40,FB_MAIN_B=FB_B-FB_PAD_S,FB_MH=FB_H*.53,FB_MAIN_T=FB_MAIN_B-FB_MH,FB_BU=FB_MH/42;
+const B4_R2=B1_R2,B4_L2=B4_R2-B_BW,B4_GAP=22,B4_B2=FB_MAIN_T-B4_GAP,B4_H2=FB_H*.33,B4_T=B4_B2-B4_H2,B4_BU=B4_H2/30;
+
+// Block subdivision definitions for quick-select
+const BLOCK_SUBS={
+  A1:{subs:[7,10,18],total:35},A2:{subs:[10,10,17],total:37},
+  A3:{subs:[10,10,16],total:36},A4:{subs:[10,10,16],total:36},
+  B1:{subs:[10,10,10,12],total:42},B2:{subs:[10,10,10,12],total:42},
+  B3:{subs:[10,10,10,12],total:42},B4:{subs:[10,10,10],total:30}
+};
+
+// ================================================================
+// BED DATA
+// ================================================================
+let beds=[];
+function defBed(farm,block,sub,num,x,y,w,h,dc,note){
+  beds.push({id:`${block}-${sub}-${num}`,farm,block,sub,num,x,y,w,h,crop:dc||'none',plantingDate:null,dripLines:null,notes:note||''});
+}
+
+function genA(blk,xL,xR,bT,bS,tot,subs,crops,shS,shB,shR){
+  const u=bS/tot,bh=Math.min(u*.68,u-2.5);let n=1;
+  for(let si=0;si<subs.length;si++)for(let b=0;b<subs[si];b++){
+    const y=bT+(n-1)*u,cr=crops[n]||'none';let bx=xL,bw=xR-xL;
+    if(shB&&shB.includes(n)){if(shS==='right')bw*=(shR||.78);if(shS==='left')bx=xR-bw*(shR||.55)}
+    let nt='';if(blk==='A1'&&n===5)nt='1 drip line only';if(cr==='old_spinach')nt='Old, needs replacement';
+    if(blk==='A2'&&cr==='onions')nt='Ready to harvest';
+    defBed('A',blk,si+1,n,bx,y,bw,bh,cr,nt);n++}
+}
+
+const cA1={};for(let i=1;i<=5;i++)cA1[i]='onion_seedbed';cA1[7]='kale';
+for(let i=8;i<=13;i++)cA1[i]='nightshade';cA1[14]='old_spinach';cA1[15]='old_spinach';
+cA1[16]='kale';[17,18,19,20,23,24,25,26,27,28,31,32].forEach(i=>cA1[i]='spinach');cA1[35]='sweet_potatoes';
+const cA2={};cA2[5]='sk_seedbed';cA2[6]='okra_seedbed';for(let i=17;i<=20;i++)cA2[i]='nightshade';
+cA2[23]='cowpeas';cA2[35]='onions';cA2[36]='onions';cA2[37]='onions';
+const cA3={};cA3[20]='cassava';
+
+genA('A1',A1_L,A1_R,A1_BT,A1_BS,35,[7,10,18],cA1,'right',[1,2],.78);
+genA('A2',A2_L,A2_R,A_BT,A_BS,37,[10,10,17],cA2);
+genA('A3',A3_L,A3_R,A_BT,A_BS,36,[10,10,16],cA3);
+genA('A4',A4_L,A4_R,A_BT,A_BS,36,[10,10,16],{});
+
+function genBM(blk,xL,xR,extra){
+  const bh=Math.min(FB_BU*.68,FB_BU-1.5);let n=1;
+  for(let si=0;si<4;si++){const cnt=[10,10,10,12][si];for(let b=0;b<cnt;b++){defBed('B',blk,si+1,n,xL,FB_MAIN_T+(n-1)*FB_BU,xR-xL,bh,'none','');n++}}
+  for(let e=0;e<extra;e++)defBed('B',blk,'X',42+e+1,xL,FB_MAIN_B+4+e*FB_BU,xR-xL,bh,'uncultivated','Piping fitted, needs tilling');
+}
+genBM('B1',B1_L2,B1_R2,2);genBM('B2',B2_L2,B2_R2,1);genBM('B3',B3_L2,B3_R2,1);
+
+const cB4={};cB4[1]='kale';for(let i=2;i<=5;i++)cB4[i]='nightshade';
+for(let i=6;i<=9;i++)cB4[i]='spinach';cB4[10]='spider_plant';
+cB4[24]='coriander';cB4[25]='kale';cB4[26]='coriander';
+cB4[27]='capsicum';cB4[28]='capsicum';cB4[29]='capsicum';cB4[30]='uncultivated';
+{const bh=Math.min(B4_BU*.68,B4_BU-1.5);let n=1;
+for(let si=0;si<3;si++)for(let b=0;b<10;b++){
+  const cr=cB4[n]||'none';let bw=B_BW,bx=B4_L2;
+  if(n===1)bw=B_BW*.55; // shortened on RIGHT
+  let nt='';if(n===1)nt='Small bed (~12m)';if(n===30)nt='Piping fitted, not prepared';
+  defBed('B','B4',si+1,n,bx,B4_T+(n-1)*B4_BU,bw,bh,cr,nt);n++}}
+
+// ================================================================
+// STORAGE
+// ================================================================
+const SK='rod-farm-v2';
+let sales=[];
+let creditPayments=[];
+let expenses=[];
+let activities=[];
+let harvests=[];
+let _dbReady=false;
+let _offlineMode=false;
+
+// --- Load from IndexedDB (primary) with fallback to window.storage ---
+async function load(){
+  try {
+    if(_dbReady){
+      // Load from IndexedDB
+      const dbBeds=await DB.getAll('beds');
+      if(dbBeds.length){dbBeds.forEach(d=>{const b=beds.find(x=>x.id===d.id);if(b)Object.assign(b,d)})}
+      const dbCrops=await DB.getAll('crops');
+      dbCrops.forEach(cr=>{if(!CROPS[cr.id])CROPS[cr.id]={c:cr.c,n:cr.n,sw:cr.sw,p:cr.p}});
+      sales=await DB.getAll('sales');
+      creditPayments=await DB.getAll('creditPayments');
+      expenses=await DB.getAll('expenses');
+      activities=await DB.getAll('activities');
+      harvests=await DB.getAll('harvests');
+      sS('<span class="ok">✓ Data loaded</span>');
+    } else {
+      // Fallback: try window.storage (artifact mode)
+      try{const r=await window.storage.get(SK);if(r&&r.value){const d=JSON.parse(r.value);
+        if(d.beds)beds.forEach(b=>{if(d.beds[b.id]){const s=d.beds[b.id];Object.assign(b,s)}});
+        if(d.crops){for(const[k,v]of Object.entries(d.crops))if(!CROPS[k])CROPS[k]=v}
+        if(d.sales)sales=d.sales;if(d.creditPayments)creditPayments=d.creditPayments;
+        if(d.expenses)expenses=d.expenses;if(d.activities)activities=d.activities;
+        if(d.harvests)harvests=d.harvests;
+        sS('<span class="ok">✓ Data loaded (local)</span>');
+      }}catch(e){}
+    }
+  }catch(e){console.log('Load error:',e)}
+}
+
+// --- Save to IndexedDB + queue sync ---
+async function save(){
+  try {
+    if(_dbReady){
+      // Save modified beds to IndexedDB
+      for(const b of beds){
+        if(b.crop!=='none'||b.plantingDate||b.dripLines||b.notes){
+          await DB.saveBed({id:b.id,block:b.block,sub:b.sub,num:b.num,farm:b.farm,crop:b.crop,plantingDate:b.plantingDate,dripLines:b.dripLines,notes:b.notes});
+        }
+      }
+      // Save custom crops
+      for(const[k,v]of Object.entries(CROPS)){
+        if(!['none','onion_seedbed','onions','spinach','old_spinach','kale','nightshade','sweet_potatoes','sk_seedbed','okra_seedbed','cowpeas','cassava','spider_plant','coriander','capsicum','tomatoes','beans','maize','watermelon','uncultivated'].includes(k)){
+          await DB.saveCrop(k,v);
+        }
+      }
+      sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
+      // Trigger sync push if online
+      if(navigator.onLine && Auth.isSignedIn()) Sync.pushChanges();
+    } else {
+      // Fallback: window.storage
+      const bd={},cr={};
+      beds.forEach(b=>{if(b.crop!=='none'||b.plantingDate||b.dripLines||b.notes){bd[b.id]={crop:b.crop,plantingDate:b.plantingDate,dripLines:b.dripLines,notes:b.notes}}});
+      for(const[k,v]of Object.entries(CROPS))if(!['none','onion_seedbed','onions','spinach','old_spinach','kale','nightshade','sweet_potatoes','sk_seedbed','okra_seedbed','cowpeas','cassava','spider_plant','coriander','capsicum','tomatoes','beans','maize','watermelon','uncultivated'].includes(k))cr[k]=v;
+      try{await window.storage.set(SK,JSON.stringify({beds:bd,crops:cr,sales,creditPayments,expenses,activities,harvests}));sS('<span class="ok">✓ Saved / Imehifadhiwa</span>')}catch(e){sS('Save failed')}
+    }
+  }catch(e){console.error('Save error:',e);sS('Save failed')}
+}
+
+// --- Save individual record types (used by specific save functions) ---
+async function saveSaleRecord(sale){
+  if(_dbReady)await DB.saveSale(sale);
+  await save();
+}
+async function saveActivityRecord(act){
+  if(_dbReady)await DB.saveActivity(act);
+  await save();
+}
+async function saveExpenseRecord(exp){
+  if(_dbReady)await DB.saveExpense(exp);
+  await save();
+}
+async function saveHarvestRecord(hv){
+  if(_dbReady)await DB.saveHarvest(hv);
+  await save();
+}
+
+function sS(h){document.getElementById('statusBar').innerHTML=h;if(h.includes('✓'))setTimeout(()=>document.getElementById('statusBar').innerHTML='Bonyeza kitanda kuhariri · Shift+click to multi-select',2500)}
+
+// ================================================================
+// SELECTION
+// ================================================================
+let sel=new Set();
+
+function selBed(id,add){if(!add)sel.clear();if(sel.has(id))sel.delete(id);else sel.add(id);refresh()}
+function selBlock(bl){const bs=beds.filter(b=>b.block===bl);const all=bs.every(b=>sel.has(b.id));bs.forEach(b=>all?sel.delete(b.id):sel.add(b.id));_qsOpenSub=null;refresh()}
+function selSub(bl,sub){const bs=beds.filter(b=>b.block===bl&&b.sub==sub);const all=bs.every(b=>sel.has(b.id));bs.forEach(b=>all?sel.delete(b.id):sel.add(b.id));refresh()}
+function qsExpandSub(bl,sub){const key=bl+'-'+sub;_qsOpenSub=_qsOpenSub===key?null:key;updatePanel()}
+function clrSel(){sel.clear();_qsOpenSub=null;refresh()}
+function refresh(){renderBeds();renderList();updatePanel();
+  const n=sel.size;sS(n?`${n} bed${n>1?'s':''} selected`:'Bonyeza kitanda kuhariri · Shift+click to multi-select')}
+
+// ================================================================
+// PANEL
+// ================================================================
+function updatePanel(){
+  const pi=document.getElementById('pnInner');const sb=beds.filter(b=>sel.has(b.id));
+  if(!sb.length){pi.innerHTML=legendHTML()+statsHTML();return}
+  if(sb.length===1){pi.innerHTML=singleHTML(sb[0])+editHTML(sb);return}
+  pi.innerHTML=multiHTML(sb)+editHTML(sb);
+}
+
+function singleHTML(b){
+  const ci=CROPS[b.crop]||CROPS.none;const d=b.plantingDate?dS(b.plantingDate):null;
+  let h='<h3>Bed Details / Maelezo</h3><div class="bi">';
+  h+=bR('Address',`${b.block}–S${b.sub}–#${b.num}`);
+  h+=bR('Farm',b.farm==='A'?'Farm A':'Farm B');
+  h+=bR('Crop / Zao',`<span style="color:${ci.c}">●</span> ${ci.n}${ci.sw?' / '+ci.sw:''}`);
+  if(b.dripLines)h+=bR('Drip Lines',b.dripLines);
+  if(d!==null)h+=bR('Planted',`${b.plantingDate} <span class="bi-days">${d}d</span>`);
+  if(b.notes)h+=`<div class="bi-note">${b.notes}</div>`;
+  h+='</div>';
+
+  // Activity history for this bed
+  const acts=bedActivities(b.id);
+  if(acts.length){
+    h+='<h3>Activity History / Historia</h3><div class="bed-act">';
+    acts.forEach(a=>{
+      const at=ACT_TYPES[a.type]||ACT_TYPES.other;
+      h+=`<div class="bed-act-item"><span class="bed-act-date">${formatDate(a.date)}</span><span class="bed-act-type">${at.icon} ${at.name}</span><span class="bed-act-detail">${a.product||a.details||''}</span></div>`;
+    });
+    h+='</div>';
+  }
+
+  // Harvest history for this bed
+  const hvs=bedHarvests(b.id);
+  if(hvs.length){
+    h+='<h3>Harvest History / Mavuno</h3><div class="bed-hv">';
+    hvs.forEach(hv=>{
+      const ci=CROPS[hv.crop]||{n:hv.crop};
+      const destLabel=hv.destination==='sell'?'→ Sold':hv.destination==='store'?'→ Stored':'→ Home';
+      h+=`<div class="bed-hv-item"><span class="bed-act-date">${formatDate(hv.date)}</span><span class="bed-hv-qty">${hv.qty}${hv.unit}</span><span class="bed-act-detail">${ci.n} ${destLabel}</span></div>`;
+    });
+    h+='</div>';
+  }
+
+  return h;
+}
+function bR(l,v){return`<div class="bi-r"><span class="bi-l">${l}</span><span class="bi-v">${v}</span></div>`}
+
+function multiHTML(sb){
+  const bl=[...new Set(sb.map(b=>b.block))].sort();
+  return`<h3>Selection / Uchaguzi</h3><div class="edt hi"><div class="sel-c">${sb.length} beds selected</div><div class="sel-l">Blocks: ${bl.join(', ')}</div></div>`;
+}
+
+let _qsOpenSub=null; // e.g. 'A1-1' = block A1, sub 1 expanded
+
+function editHTML(sb){
+  const crs=[...new Set(sb.map(b=>b.crop))];const drps=[...new Set(sb.map(b=>b.dripLines))];
+  const dts=[...new Set(sb.map(b=>b.plantingDate))];const nts=[...new Set(sb.map(b=>b.notes))];
+  const cc=crs.length===1?crs[0]:'';const cd=drps.length===1?drps[0]:null;
+  const cdt=dts.length===1&&dts[0]?dts[0]:'';const cn=nts.length===1?nts[0]:'';
+
+  let h=`<h3>Edit / Hariri${sb.length>1?` (${sb.length})`:''}</h3>`;
+  // Quick select with subs + bed drill-down
+  h+=`<div style="margin-bottom:8px"><label style="font-size:9px;color:var(--ink3);font-family:'Space Mono',monospace;letter-spacing:.5px">QUICK SELECT — tap sub to see beds</label>`;
+  h+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:4px">`;
+  ['A1','A2','A3','A4','B1','B2','B3','B4'].forEach(bl=>{
+    const bds=beds.filter(b=>b.block===bl);const allS=bds.every(b=>sel.has(b.id));
+    const subDef=BLOCK_SUBS[bl];
+    let sh=`<div class="qs-blk"><div class="qs-blk-name${allS?' on':''}" onclick="selBlock('${bl}')">${bl}</div><div class="qs-subs">`;
+    let cum=0;
+    subDef.subs.forEach((s,i)=>{
+      const subBeds=bds.filter(b=>b.sub===(i+1));const sOn=subBeds.length>0&&subBeds.every(b=>sel.has(b.id));
+      const someOn=subBeds.some(b=>sel.has(b.id));
+      sh+=`<span class="qs-sub${sOn?' on':''}" style="${someOn&&!sOn?'border-color:var(--g2);color:var(--g2)':''}" onclick="qsExpandSub('${bl}',${i+1})">S${i+1}</span>`;
+      cum+=s;
+    });
+    // Extra beds (X sub)
+    const xBeds=bds.filter(b=>b.sub==='X');
+    if(xBeds.length){const xOn=xBeds.every(b=>sel.has(b.id));sh+=`<span class="qs-sub${xOn?' on':''}" onclick="selSub('${bl}','X')">X</span>`}
+    sh+=`</div></div>`;h+=sh;
+  });
+  h+=`</div>`;
+
+  // Bed-level panel (if a sub is expanded)
+  if(_qsOpenSub){
+    const [obl,osub]=_qsOpenSub.split('-');
+    const subBeds=beds.filter(b=>b.block===obl&&b.sub===+osub).sort((a,b)=>a.num-b.num);
+    if(subBeds.length){
+      const allOn=subBeds.every(b=>sel.has(b.id));
+      h+=`<div class="qs-beds-panel"><div class="qs-beds-header"><span>${obl} S${osub} — ${subBeds.length} beds</span><span style="display:flex;gap:6px"><span style="font-size:9px;cursor:pointer;color:var(--g2);font-weight:600" onclick="selSub('${obl}',${osub});updatePanel()">${allOn?'Deselect':'Select'} all</span><span class="qs-beds-close" onclick="_qsOpenSub=null;updatePanel()">✕</span></span></div>`;
+      h+=`<div class="qs-beds-grid">`;
+      subBeds.forEach(b=>{
+        const isOn=sel.has(b.id);
+        const ci=CROPS[b.crop]||CROPS.none;
+        h+=`<div class="qs-bed${isOn?' on':''}${ci.p?' planted':''}" onclick="selBed('${b.id}',true);updatePanel()" title="${ci.n}">${b.num}</div>`;
+      });
+      h+=`</div></div>`;
+    }
+  }
+  h+=`</div>`;
+
+  // Crop
+  h+=`<div class="fld"><label>Crop / Zao</label><select id="eC"><option value="">— no change —</option>`;
+  for(const[k,v]of Object.entries(CROPS)){h+=`<option value="${k}"${cc===k?' selected':''}>${v.n}${v.sw?' / '+v.sw:''}</option>`}
+  h+=`</select><div style="margin-top:4px"><span style="font-size:10px;color:var(--g2);cursor:pointer;font-weight:600" onclick="openCropModal()">+ Add new crop / Ongeza zao jipya</span></div></div>`;
+
+  // Date
+  h+=`<div class="fld"><label>Planting Date / Tarehe <span class="opt">(optional)</span></label><input type="date" id="eD" value="${cdt}"></div>`;
+
+  // Drip
+  h+=`<div class="fld"><label>Drip Lines <span class="opt">(optional)</span></label><div class="drip-btns">`;
+  [1,2,3].forEach(n=>h+=`<div class="drip-btn${cd===n?' act':''}" onclick="pD(${n},this)">${n}</div>`);
+  h+=`<div class="drip-btn${cd===null?' act':''}" onclick="pD(null,this)" style="font-size:10px">—</div></div></div>`;
+
+  // Notes
+  h+=`<div class="fld"><label>Notes / Maoni <span class="opt">(optional)</span></label><textarea id="eN" placeholder="Andika maoni...">${cn||''}</textarea></div>`;
+
+  h+=`<div class="btn-row"><button class="btn-ap" onclick="applyEdit()">Apply / Tekeleza</button><button class="btn-cl" onclick="clrSel()">Clear</button></div>`;
+
+  // Uproot button — only show if any selected bed has a planted crop
+  const hasPlanted=sb.some(b=>CROPS[b.crop]&&CROPS[b.crop].p);
+  if(hasPlanted){
+    h+=`<button class="uproot-btn" onclick="uprootBeds()">🌿 Uproot / Ng'oa (${sb.filter(b=>CROPS[b.crop]&&CROPS[b.crop].p).length} beds)</button>`;
+  }
+
+  return h;
+}
+
+let _drip=undefined;
+function pD(n,el){_drip=n;el.parentNode.querySelectorAll('.drip-btn').forEach(b=>b.classList.remove('act'));el.classList.add('act')}
+
+async function applyEdit(){
+  const cr=document.getElementById('eC').value;const dt=document.getElementById('eD').value;
+  const nt=document.getElementById('eN').value;let ch=false;
+  beds.forEach(b=>{if(!sel.has(b.id))return;
+    if(cr){b.crop=cr;ch=true}if(dt){b.plantingDate=dt;ch=true}
+    if(_drip!==undefined){b.dripLines=_drip;ch=true}
+    if(nt.trim()){b.notes=nt.trim();ch=true}});
+  if(ch){renderBeds();renderList();updatePanel();await save()}_drip=undefined;
+}
+
+async function uprootBeds(){
+  const planted=beds.filter(b=>sel.has(b.id)&&CROPS[b.crop]&&CROPS[b.crop].p);
+  if(!planted.length)return;
+  const cropNames=[...new Set(planted.map(b=>(CROPS[b.crop]||{}).n||b.crop))].join(', ');
+  if(!confirm(`Uproot ${planted.length} bed${planted.length>1?'s':''} (${cropNames})?\n\nThis clears crop and planting date.\nActivity history is preserved.\n\nNg'oa vitanda ${planted.length}?`))return;
+
+  planted.forEach(b=>{b.crop='none';b.plantingDate=null;b.notes=''});
+  renderBeds();renderList();updatePanel();
+  await save();
+  sS(`<span class="ok">✓ ${planted.length} bed${planted.length>1?'s':''} uprooted / Imeng'olewa</span>`);
+}
+
+function legendHTML(){
+  const used=new Set(beds.map(b=>b.crop));let h='<h3>Crop Legend / Mazao</h3>';
+  for(const[k,v]of Object.entries(CROPS)){if(!used.has(k))continue;
+    const cnt=beds.filter(b=>b.crop===k).length;
+    h+=`<div class="lr"><div class="ls" style="background:${v.c}"></div><span>${v.n}${v.sw?' / '+v.sw:''} <span style="color:#aaa">(${cnt})</span></span></div>`}
+  return h;
+}
+function statsHTML(){
+  const t=beds.length,p=beds.filter(b=>CROPS[b.crop]&&CROPS[b.crop].p).length,e=beds.filter(b=>b.crop==='none').length;
+  let h='<h3>Summary / Muhtasari</h3><div class="sg">';
+  [{n:t,d:'Total'},{n:p,d:'Planted'},{n:e,d:'Empty'},{n:((p/t)*100).toFixed(0)+'%',d:'Utilization'}].forEach(s=>h+=`<div class="stc"><div class="sn">${s.n}</div><div class="sd">${s.d}</div></div>`);
+  return h+'</div>';
+}
+
+function dS(d){if(!d)return null;const diff=Math.floor((new Date()-new Date(d))/(864e5));return diff>=0?diff:0}
+
+// ================================================================
+// CUSTOM CROP MODAL
+// ================================================================
+let _selColor='#c44040';
+function openCropModal(){
+  document.getElementById('cropModal').classList.add('show');
+  const g=document.getElementById('colorGrid');g.innerHTML='';
+  CROP_COLORS.forEach(c=>{const d=document.createElement('div');d.className='color-opt'+(c===_selColor?' sel':'');d.style.background=c;
+    d.onclick=()=>{_selColor=c;g.querySelectorAll('.color-opt').forEach(x=>x.classList.remove('sel'));d.classList.add('sel')};g.appendChild(d)});
+}
+function closeCropModal(){document.getElementById('cropModal').classList.remove('show')}
+async function addNewCrop(){
+  const en=document.getElementById('ncNameEn').value.trim();if(!en){alert('Name required');return}
+  const sw=document.getElementById('ncNameSw').value.trim();
+  const key=en.toLowerCase().replace(/[^a-z0-9]/g,'_');
+  CROPS[key]={c:_selColor,n:en,sw:sw||'',p:true};
+  closeCropModal();updatePanel();await save();
+  document.getElementById('ncNameEn').value='';document.getElementById('ncNameSw').value='';
+}
+
+// ================================================================
+// LIST VIEW
+// ================================================================
+let sortCol='block',sortDir=1;
+function sortList(col){if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1}renderList()}
+
+function renderList(){
+  const tb=document.getElementById('lvBody');
+  const ff=document.getElementById('lvFarm').value;
+  const fb=document.getElementById('lvBlock').value;
+  const fc=document.getElementById('lvCrop').value;
+  const fs=document.getElementById('lvSearch').value.toLowerCase();
+
+  // Update filter dropdowns
+  const bSel=document.getElementById('lvBlock');const curB=bSel.value;
+  const blocks=[...new Set(beds.filter(b=>!ff||b.farm===ff).map(b=>b.block))].sort();
+  bSel.innerHTML='<option value="">All Blocks</option>'+blocks.map(b=>`<option value="${b}"${b===curB?' selected':''}>${b}</option>`).join('');
+
+  const cSel=document.getElementById('lvCrop');const curC=cSel.value;
+  const crops=[...new Set(beds.map(b=>b.crop))].sort();
+  cSel.innerHTML='<option value="">All Crops</option>'+crops.map(c=>`<option value="${c}"${c===curC?' selected':''}>${(CROPS[c]||{}).n||c}</option>`).join('');
+
+  let filtered=beds.filter(b=>{
+    if(ff&&b.farm!==ff)return false;if(fb&&b.block!==fb)return false;if(fc&&b.crop!==fc)return false;
+    if(fs){const ci=CROPS[b.crop]||{};const txt=`${b.block} ${b.num} ${ci.n||''} ${ci.sw||''} ${b.notes||''}`.toLowerCase();if(!txt.includes(fs))return false}
+    return true;
+  });
+
+  filtered.sort((a,b)=>{
+    let av,bv;
+    if(sortCol==='block'){av=a.block;bv=b.block}
+    else if(sortCol==='sub'){av=a.sub;bv=b.sub}
+    else if(sortCol==='num'){av=a.num;bv=b.num}
+    else if(sortCol==='crop'){av=(CROPS[a.crop]||{}).n||'';bv=(CROPS[b.crop]||{}).n||''}
+    else if(sortCol==='days'){av=a.plantingDate?dS(a.plantingDate):-1;bv=b.plantingDate?dS(b.plantingDate):-1}
+    else if(sortCol==='drip'){av=a.dripLines||0;bv=b.dripLines||0}
+    if(av<bv)return -sortDir;if(av>bv)return sortDir;return 0;
+  });
+
+  tb.innerHTML=filtered.map(b=>{
+    const ci=CROPS[b.crop]||CROPS.none;const d=b.plantingDate?dS(b.plantingDate):null;
+    const isSel=sel.has(b.id);
+    return`<tr class="${isSel?'sel':''}" onclick="selBed('${b.id}',event.shiftKey);if(!document.getElementById('pn').classList.contains('open'))togglePanel()">
+      <td><strong>${b.block}</strong></td><td>S${b.sub}</td><td>${b.num}</td>
+      <td><span class="crop-dot" style="background:${ci.c}"></span>${ci.n}${ci.sw?' / '+ci.sw:''}</td>
+      <td>${d!==null?`<span class="days-badge">${d}d</span>`:''}</td>
+      <td>${b.dripLines||''}</td></tr>`;
+  }).join('');
+}
+
+// ================================================================
+// VIEW SWITCHING & TAB NAVIGATION
+// ================================================================
+let currentViewMode='map';
+let currentTab='map';
+
+function showView(mode){
+  // First switch to map tab context
+  if(currentTab!=='map')switchTab('map');
+  currentViewMode=mode;
+  document.getElementById('mv').classList.toggle('hidden',mode!=='map');
+  document.getElementById('listView').classList.toggle('show',mode==='list');
+  document.getElementById('vMap').classList.toggle('act',mode==='map');
+  document.getElementById('vList').classList.toggle('act',mode==='list');
+  // Keep other tabs deactivated
+  document.getElementById('vSales').classList.remove('act');
+  const vsh=document.getElementById('vShughuli');if(vsh)vsh.classList.remove('act');
+  document.getElementById('vExpenses').classList.remove('act');
+  if(mode==='list')renderList();
+}
+
+function switchTab(tab){
+  currentTab=tab;
+  // Hide all views
+  document.getElementById('mv').classList.add('hidden');
+  document.getElementById('listView').classList.remove('show');
+  document.getElementById('salesView').classList.remove('show');
+  document.getElementById('shughuliView').classList.remove('show');
+  document.getElementById('expensesView').classList.remove('show');
+  document.getElementById('pn').classList.remove('open');
+
+  // Top bar: deactivate all main nav buttons
+  ['vMap','vList','vSales','vShughuli','vExpenses'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('act')});
+  // Bottom tabs
+  ['tabMap','tabSales','tabShughuli','tabExpenses'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('act')});
+
+  if(tab==='map'){
+    document.getElementById('mv').classList.remove('hidden');
+    document.getElementById('vMap').classList.add('act');
+    const tm=document.getElementById('tabMap');if(tm)tm.classList.add('act');
+    currentViewMode='map';
+  } else if(tab==='sales'){
+    document.getElementById('salesView').classList.add('show');
+    document.getElementById('vSales').classList.add('act');
+    const ts=document.getElementById('tabSales');if(ts)ts.classList.add('act');
+    renderSales();
+  } else if(tab==='shughuli'){
+    document.getElementById('shughuliView').classList.add('show');
+    const vs=document.getElementById('vShughuli');if(vs)vs.classList.add('act');
+    const tsh=document.getElementById('tabShughuli');if(tsh)tsh.classList.add('act');
+    renderShughuli();
+  } else if(tab==='expenses'){
+    document.getElementById('expensesView').classList.add('show');
+    document.getElementById('vExpenses').classList.add('act');
+    const te=document.getElementById('tabExpenses');if(te)te.classList.add('act');
+    // PIN protection
+    if(_expensesUnlocked){
+      document.getElementById('pinScreen').style.display='none';
+      document.getElementById('expContent').style.display='block';
+      renderExpenses();
+    } else {
+      _pinEntry='';updatePinDots();
+      document.getElementById('pinScreen').style.display='flex';
+      document.getElementById('expContent').style.display='none';
+    }
+  }
+}
+
+// ================================================================
+// SALES LOGIC
+// ================================================================
+let _saleUnit='kg';
+let _salePay='cash';
+let _saleFarm='A';
+let _saleHand='Rod';
+let _editingSaleId=null;
+let _payBuyer=null;
+let _payMethod='cash';
+let _weekOffset=0;  // 0=current week, -1=last week, etc
+let _monthOffset=0;
+
+// PIN protection
+let _expensesUnlocked=false;
+let _pinEntry='';
+const _PIN='5689';
+
+// --- Date helpers (timezone-safe, no UTC) ---
+function _fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function _ld(ds){const p=ds.split('-');return new Date(+p[0],+p[1]-1,+p[2])}
+function todayStr(){return _fmt(new Date())}
+function weekStartSun(dateStr){
+  const d=_ld(dateStr);
+  d.setDate(d.getDate()-d.getDay());
+  return _fmt(d);
+}
+function weekEndSat(startStr){const d=_ld(startStr);d.setDate(d.getDate()+6);return _fmt(d)}
+function monthStart(dateStr){return dateStr.slice(0,7)+'-01'}
+function monthEnd(yearMonth){const [y,m]=yearMonth.split('-').map(Number);return _fmt(new Date(y,m,0))}
+function addDays(dateStr,n){const d=_ld(dateStr);d.setDate(d.getDate()+n);return _fmt(d)}
+function addMonths(dateStr,n){const d=_ld(dateStr);d.setMonth(d.getMonth()+n);return _fmt(d)}
+
+function formatKES(n){
+  if(n>=1000000)return (n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
+  if(n>=10000)return (n/1000).toFixed(1).replace(/\.0$/,'')+'K';
+  return n.toLocaleString('en-KE');
+}
+function formatDate(ds){
+  const d=new Date(ds+'T00:00:00');
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d.getDate()+' '+months[d.getMonth()];
+}
+function formatDateShort(ds){
+  const d=new Date(ds+'T00:00:00');
+  return d.getDate()+'/'+(d.getMonth()+1);
+}
+function formatMonth(ds){
+  const d=new Date(ds+'T00:00:00');
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[d.getMonth()]+' '+d.getFullYear();
+}
+
+// --- Summary calculations for a period ---
+function periodSales(startDate,endDate){
+  let kes=0,kg=0,count=0;
+  sales.forEach(s=>{
+    if(s.date>=startDate&&s.date<=endDate){kes+=s.total;if(s.unit==='kg')kg+=s.qty;count++}
+  });
+  return{kes,kg,count};
+}
+
+// --- Credit calculations ---
+function creditSummary(){
+  const byBuyer={};
+  sales.filter(s=>s.payment==='credit').forEach(s=>{
+    if(!s.buyer)return;
+    if(!byBuyer[s.buyer])byBuyer[s.buyer]={owed:0,sales:[]};
+    byBuyer[s.buyer].owed+=s.total;
+    byBuyer[s.buyer].sales.push(s);
+  });
+  creditPayments.forEach(p=>{
+    if(byBuyer[p.buyer])byBuyer[p.buyer].owed-=p.amount;
+  });
+  const result={};
+  for(const[name,data]of Object.entries(byBuyer)){
+    if(data.owed>0)result[name]=data;
+  }
+  return result;
+}
+
+// --- Buyer suggestions ---
+function getBuyers(){
+  const names=new Set();
+  sales.forEach(s=>{if(s.buyer)names.add(s.buyer)});
+  return[...names].sort();
+}
+
+// --- Week/Month navigation ---
+function navWeek(dir){_weekOffset+=dir;renderSales()}
+function navMonth(dir){_monthOffset+=dir;renderSales()}
+
+// --- Render Sales view ---
+function renderSales(){
+  const sv=document.getElementById('svInner');
+  const credits=creditSummary();
+  const creditNames=Object.keys(credits);
+  const recentSales=[...sales].sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);
+
+  // Calculate periods
+  const today=todayStr();
+  const todayData=periodSales(today,today);
+
+  const viewWeekStart=addDays(weekStartSun(today),_weekOffset*7);
+  const viewWeekEnd=weekEndSat(viewWeekStart);
+  const weekData=periodSales(viewWeekStart,viewWeekEnd);
+  const isCurrentWeek=_weekOffset===0;
+
+  const viewMonthStart=addMonths(monthStart(today),_monthOffset);
+  const viewMonthEnd=monthEnd(viewMonthStart.slice(0,7));
+  const monthData=periodSales(viewMonthStart,viewMonthEnd);
+  const isCurrentMonth=_monthOffset===0;
+
+  let h='';
+
+  // Dual buttons: New Sale + Harvest
+  h+=`<div class="sv-btn-row">`;
+  h+=`<button class="sv-add-btn" onclick="openSaleModal()">+ Uza / Sell</button>`;
+  h+=`<button class="hv-btn" onclick="openHvModal()">🌾 Vuna / Harvest</button>`;
+  h+=`</div>`;
+
+  // Storage section (if anything in storage)
+  const storageItems=getStorageInventory();
+  if(storageItems.length){
+    h+=`<div class="sv-section">📦 Stored / Zilizohifadhiwa<span class="sv-sec-r">${storageItems.length} item${storageItems.length>1?'s':''}</span></div>`;
+    storageItems.forEach(si=>{
+      const ci=CROPS[si.crop]||{c:'#aaa',n:si.crop};
+      h+=`<div class="st-item">`;
+      h+=`<div class="st-item-dot" style="background:${ci.c}"></div>`;
+      h+=`<div class="st-item-info"><div class="st-item-crop">${ci.n}</div><div class="st-item-meta">Stored ${formatDate(si.date)} · ${si.remaining}${si.unit}</div></div>`;
+      h+=`<div class="st-item-qty">${si.remaining}${si.unit}</div>`;
+      h+=`<button class="st-sell-btn" onclick="sellFromStorage('${si.harvestId}','${si.crop}',${si.remaining},'${si.unit}')">Sell</button>`;
+      h+=`</div>`;
+    });
+  }
+
+  // Summary cards — navigable
+  h+=`<div class="sv-cards">`;
+
+  // Today (static)
+  h+=`<div class="sv-card"><div class="sv-card-amt">${formatKES(todayData.kes)}</div><div class="sv-card-label">Leo / Today</div>${todayData.kg?`<div class="sv-card-kg">${todayData.kg}kg</div>`:''}</div>`;
+
+  // Week (navigable)
+  h+=`<div class="sv-card"><div class="sv-card-nav"><button class="sv-nav-btn" onclick="navWeek(-1)">‹</button><div style="flex:1;text-align:center"><div class="sv-card-amt">${formatKES(weekData.kes)}</div><div class="sv-card-label">${isCurrentWeek?'Wiki / Week':'Wiki'}</div><div class="sv-card-range">${formatDateShort(viewWeekStart)}-${formatDateShort(viewWeekEnd)}</div>${weekData.kg?`<div class="sv-card-kg">${weekData.kg}kg</div>`:''}<div class="sv-card-expand" onclick="toggleBreakdown('week')">details ▾</div></div><button class="sv-nav-btn" onclick="navWeek(1)"${isCurrentWeek?' style="visibility:hidden"':''}>›</button></div></div>`;
+
+  // Month (navigable)
+  h+=`<div class="sv-card"><div class="sv-card-nav"><button class="sv-nav-btn" onclick="navMonth(-1)">‹</button><div style="flex:1;text-align:center"><div class="sv-card-amt">${formatKES(monthData.kes)}</div><div class="sv-card-label">${formatMonth(viewMonthStart)}</div>${monthData.kg?`<div class="sv-card-kg">${monthData.kg}kg</div>`:''}<div class="sv-card-expand" onclick="toggleBreakdown('month')">details ▾</div></div><button class="sv-nav-btn" onclick="navMonth(1)"${isCurrentMonth?' style="visibility:hidden"':''}>›</button></div></div>`;
+
+  h+=`</div>`;
+
+  // Crop breakdowns (hidden by default)
+  h+=`<div id="weekBreakdown" style="display:none">${cropBreakdownHTML(viewWeekStart,viewWeekEnd,'Wiki / Week')}</div>`;
+  h+=`<div id="monthBreakdown" style="display:none">${cropBreakdownHTML(viewMonthStart,viewMonthEnd,formatMonth(viewMonthStart))}</div>`;
+
+  // Credit section
+  if(creditNames.length){
+    h+=`<div class="sv-section">Deni / Credit<span class="sv-sec-r">${creditNames.length} buyer${creditNames.length>1?'s':''}</span></div>`;
+    creditNames.sort().forEach(name=>{
+      const c=credits[name];
+      h+=`<div class="sv-credit-item"><div class="sv-credit-name">${name}</div><div class="sv-credit-owed">KES ${formatKES(Math.round(c.owed))}</div><button class="sv-credit-pay-btn" onclick="openPayModal('${name.replace(/'/g,"\\'")}',${Math.round(c.owed)})">Pay / Lipa</button></div>`;
+    });
+  }
+
+  // Recent sales
+  h+=`<div class="sv-section">Recent Sales / Mauzo ya Karibuni<span class="sv-sec-r">${sales.length} total</span></div>`;
+
+  if(!recentSales.length){
+    h+=`<div class="sv-empty"><div class="sv-empty-icon">🌱</div>No sales yet. Tap the green button to record your first sale!<br><span style="font-size:11px;color:var(--ink3)">Bado hakuna mauzo. Bonyeza kitufe cha kijani kuanza.</span></div>`;
+  } else {
+    h+=`<div class="sv-list">`;
+    recentSales.forEach(s=>{
+      const ci=CROPS[s.crop]||{c:'#aaa',n:s.crop,sw:''};
+      const unitLabel=s.unit==='pcs'?'pcs':'kg';
+      const farmLabel=s.farm?(s.farm==='Home'?'Home':s.farm==='Both'?'Farm A+B':`Farm ${s.farm}`):'';
+      const handLabel=s.recordedBy||'';
+      h+=`<div class="sv-item">`;
+      h+=`<div class="sv-item-dot" style="background:${ci.c}"></div>`;
+      h+=`<div class="sv-item-info">`;
+      h+=`<div class="sv-item-crop">${ci.n}${s.buyer?' → '+s.buyer:''}</div>`;
+      h+=`<div class="sv-item-meta">${formatDate(s.date)} · ${s.qty}${unitLabel} × ${s.pricePerUnit}/=</div>`;
+      if(farmLabel||handLabel)h+=`<div class="sv-item-who">${[farmLabel,handLabel].filter(Boolean).join(' · ')}</div>`;
+      h+=`</div>`;
+      h+=`<div class="sv-item-amt"><div class="sv-item-kes">${formatKES(s.total)}/=</div><div class="sv-item-pay${s.payment==='credit'?' credit':''}">${s.payment}</div></div>`;
+      h+=`<div class="sv-item-actions">`;
+      h+=`<button class="sv-item-edit" onclick="event.stopPropagation();editSale('${s.id}')">✎</button>`;
+      h+=`<button class="sv-item-del" onclick="event.stopPropagation();deleteSale('${s.id}')">✕</button>`;
+      h+=`</div></div>`;
+    });
+    h+=`</div>`;
+  }
+
+  sv.innerHTML=h;
+}
+
+// --- Sale Modal ---
+function openSaleModal(editId){
+  _editingSaleId=editId||null;
+  const modal=document.getElementById('saleModal');
+  if(!editId)delete modal.dataset.fromHarvest;
+  modal.classList.add('show');
+
+  if(editId){
+    // Edit mode: pre-fill from existing sale
+    const s=sales.find(x=>x.id===editId);
+    if(!s){closeSaleModal();return}
+    document.getElementById('saleModalTitle').textContent='✎ Edit Sale / Hariri Mauzo';
+    document.getElementById('sDate').value=s.date;
+    document.getElementById('sCrop').value=s.crop;
+    document.getElementById('sQty').value=s.qty;
+    document.getElementById('sPrice').value=s.pricePerUnit;
+    document.getElementById('sBuyer').value=s.buyer||'';
+    _saleUnit=s.unit||'kg';
+    _salePay=s.payment||'cash';
+    _saleFarm=s.farm||'A';
+    _saleHand=s.recordedBy||'Rod';
+  } else {
+    // New sale defaults
+    document.getElementById('saleModalTitle').textContent='💰 New Sale / Uza';
+    document.getElementById('sDate').value=todayStr();
+    document.getElementById('sQty').value='';
+    document.getElementById('sPrice').value='';
+    document.getElementById('sBuyer').value='';
+    _saleUnit='kg';_salePay='cash';_saleFarm='A';_saleHand='Rod';
+  }
+
+  // Set UI state for unit
+  document.querySelectorAll('#sUnitToggle .unit-opt').forEach(el=>el.classList.toggle('act',el.dataset.unit===_saleUnit));
+  document.getElementById('sUnitLabel').textContent=_saleUnit==='kg'?'(kg)':'(pcs)';
+  document.getElementById('sPriceLabel').textContent=_saleUnit==='kg'?'kg':'piece';
+
+  // Pay buttons
+  document.querySelectorAll('#saleModal .pay-btn').forEach(el=>{el.classList.remove('act','act-credit');if(el.dataset.pay===_salePay)el.classList.add(_salePay==='credit'?'act-credit':'act')});
+  document.getElementById('sCreditNote').style.display=_salePay==='credit'?'block':'none';
+
+  // Farm toggle
+  document.querySelectorAll('#sFarmToggle .farm-opt').forEach(el=>el.classList.toggle('act',el.dataset.farm===_saleFarm));
+
+  // Farmhand buttons
+  document.querySelectorAll('#sHandBtns .hand-btn').forEach(el=>el.classList.toggle('act',el.dataset.hand===_saleHand));
+
+  // Populate crops dropdown
+  const cSel=document.getElementById('sCrop');
+  const currentCrop=editId?sales.find(x=>x.id===editId)?.crop:'';
+  cSel.innerHTML='<option value="">— Select crop / Chagua zao —</option>';
+  for(const[k,v]of Object.entries(CROPS)){
+    if(!v.p)continue;
+    cSel.innerHTML+=`<option value="${k}"${k===currentCrop?' selected':''}>${v.n}${v.sw?' / '+v.sw:''}</option>`;
+  }
+
+  // Buyer suggestions
+  const dl=document.getElementById('buyerList');
+  dl.innerHTML='';
+  getBuyers().forEach(b=>dl.innerHTML+=`<option value="${b}">`);
+
+  calcTotal();
+  document.getElementById('sTotal').textContent=editId?document.getElementById('sTotal').textContent:'0';
+}
+
+function editSale(id){openSaleModal(id)}
+
+function closeSaleModal(){
+  document.getElementById('saleModal').classList.remove('show');
+  _editingSaleId=null;
+}
+
+function setFarm(f,el){
+  _saleFarm=f;
+  document.querySelectorAll('#sFarmToggle .farm-opt').forEach(b=>b.classList.remove('act'));
+  el.classList.add('act');
+}
+
+function setHand(h,el){
+  _saleHand=h;
+  document.querySelectorAll('#sHandBtns .hand-btn').forEach(b=>b.classList.remove('act'));
+  el.classList.add('act');
+}
+
+function setUnit(u,el){
+  _saleUnit=u;
+  document.querySelectorAll('#sUnitToggle .unit-opt').forEach(b=>b.classList.remove('act'));
+  el.classList.add('act');
+  document.getElementById('sUnitLabel').textContent=u==='kg'?'(kg)':'(pcs)';
+  document.getElementById('sPriceLabel').textContent=u==='kg'?'kg':'piece';
+  calcTotal();
+}
+
+function setPay(p,el){
+  _salePay=p;
+  document.querySelectorAll('#saleModal .pay-btn').forEach(b=>b.classList.remove('act','act-credit'));
+  el.classList.add(p==='credit'?'act-credit':'act');
+  document.getElementById('sCreditNote').style.display=p==='credit'?'block':'none';
+}
+
+function calcTotal(){
+  const q=parseFloat(document.getElementById('sQty').value)||0;
+  const p=parseFloat(document.getElementById('sPrice').value)||0;
+  const t=Math.round(q*p);
+  document.getElementById('sTotal').textContent=t.toLocaleString('en-KE');
+}
+
+async function saveSale(){
+  const crop=document.getElementById('sCrop').value;
+  const date=document.getElementById('sDate').value;
+  const qty=parseFloat(document.getElementById('sQty').value)||0;
+  const price=parseFloat(document.getElementById('sPrice').value)||0;
+  const buyer=document.getElementById('sBuyer').value.trim();
+  const total=Math.round(qty*price);
+
+  if(!crop){alert('Please select a crop / Chagua zao');return}
+  if(!qty||!price){alert('Enter quantity and price / Weka kiasi na bei');return}
+  if(_salePay==='credit'&&!buyer){alert('Buyer name required for credit / Jina la mnunuzi linahitajika kwa deni');return}
+
+  if(_editingSaleId){
+    // Update existing sale
+    const idx=sales.findIndex(s=>s.id===_editingSaleId);
+    if(idx>=0){
+      sales[idx]={...sales[idx],date,crop,qty,unit:_saleUnit,pricePerUnit:price,total,buyer:buyer||null,payment:_salePay,farm:_saleFarm,recordedBy:_saleHand};
+    }
+    closeSaleModal();
+    renderSales();
+    await save();
+    sS(`<span class="ok">✓ Sale updated: KES ${formatKES(total)}</span>`);
+  } else {
+    // New sale — check for harvest link
+    const hvLink=document.getElementById('saleModal').dataset.fromHarvest||null;
+    const sale={
+      id:'sale_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+      date,crop,qty,unit:_saleUnit,pricePerUnit:price,total,
+      buyer:buyer||null,payment:_salePay,
+      farm:_saleFarm,recordedBy:_saleHand,
+      harvestId:hvLink,fromHarvest:hvLink,createdAt:Date.now()
+    };
+    sales.push(sale);
+    delete document.getElementById('saleModal').dataset.fromHarvest;
+    closeSaleModal();
+    renderSales();
+    await save();
+    sS(`<span class="ok">✓ Sale recorded: KES ${formatKES(total)}</span>`);
+  }
+}
+
+async function deleteSale(id){
+  if(!confirm('Delete this sale? / Futa mauzo haya?'))return;
+  sales=sales.filter(s=>s.id!==id);
+  renderSales();
+  await save();
+  sS('<span class="ok">✓ Sale deleted</span>');
+}
+
+// --- Credit Payment Modal ---
+function openPayModal(buyer,owed){
+  _payBuyer=buyer;_payMethod='cash';
+  document.getElementById('payModal').classList.add('show');
+  document.getElementById('payModalBuyer').textContent=buyer;
+  document.getElementById('payModalOwed').textContent=`Owes: KES ${formatKES(owed)}`;
+  document.getElementById('payAmt').value=owed;
+  document.getElementById('payAmt').max=owed;
+  document.querySelectorAll('#payModal .pay-btn').forEach(el=>{el.classList.remove('act');if(el.dataset.pay==='cash')el.classList.add('act')});
+}
+function closePayModal(){document.getElementById('payModal').classList.remove('show');_payBuyer=null}
+
+function setPayMethod(m,el){
+  _payMethod=m;
+  document.querySelectorAll('#payModal .pay-btn').forEach(b=>b.classList.remove('act'));
+  el.classList.add('act');
+}
+
+async function recordPayment(){
+  const amt=parseFloat(document.getElementById('payAmt').value)||0;
+  if(!amt||!_payBuyer){alert('Enter amount / Weka kiasi');return}
+  creditPayments.push({
+    id:'pay_'+Date.now(),
+    buyer:_payBuyer,
+    amount:amt,
+    method:_payMethod,
+    date:todayStr(),
+    createdAt:Date.now()
+  });
+  closePayModal();
+  renderSales();
+  await save();
+  sS(`<span class="ok">✓ Payment recorded: KES ${formatKES(amt)} from ${_payBuyer}</span>`);
+}
+
+// ================================================================
+// PIN PROTECTION (Expenses)
+// ================================================================
+function pinKey(n){
+  if(_pinEntry.length>=4)return;
+  _pinEntry+=n;
+  updatePinDots();
+  if(_pinEntry.length===4){
+    if(_pinEntry===_PIN){
+      _expensesUnlocked=true;
+      document.getElementById('pinScreen').style.display='none';
+      document.getElementById('expContent').style.display='block';
+      renderExpenses();
+    } else {
+      document.querySelectorAll('#pinDots .pin-dot').forEach(d=>{d.classList.add('wrong')});
+      setTimeout(()=>{_pinEntry='';updatePinDots();document.querySelectorAll('#pinDots .pin-dot').forEach(d=>d.classList.remove('wrong'))},600);
+    }
+  }
+}
+function pinDel(){
+  _pinEntry=_pinEntry.slice(0,-1);
+  updatePinDots();
+}
+function updatePinDots(){
+  document.querySelectorAll('#pinDots .pin-dot').forEach((d,i)=>{
+    d.classList.toggle('filled',i<_pinEntry.length);
+  });
+}
+
+// ================================================================
+// CROP BREAKDOWN
+// ================================================================
+function cropBreakdownHTML(startDate,endDate,title){
+  const byCrop={};
+  sales.forEach(s=>{
+    if(s.date>=startDate&&s.date<=endDate){
+      const ci=CROPS[s.crop]||{c:'#aaa',n:s.crop};
+      if(!byCrop[s.crop])byCrop[s.crop]={name:ci.n,color:ci.c,kes:0,kg:0,pcs:0};
+      byCrop[s.crop].kes+=s.total;
+      if(s.unit==='kg')byCrop[s.crop].kg+=s.qty;else byCrop[s.crop].pcs+=s.qty;
+    }
+  });
+  const crops=Object.values(byCrop).sort((a,b)=>b.kes-a.kes);
+  if(!crops.length)return'<div class="sv-breakdown"><div style="text-align:center;color:var(--ink3);font-size:11px;padding:8px">No sales in this period</div></div>';
+  let h=`<div class="sv-breakdown"><div style="font-size:10px;font-weight:700;color:var(--g1);margin-bottom:6px">${title} — Crop Breakdown</div>`;
+  crops.forEach(c=>{
+    const qtyStr=c.kg?`${c.kg}kg`:'';const pcsStr=c.pcs?`${c.pcs}pcs`:'';
+    const qty=[qtyStr,pcsStr].filter(Boolean).join(' + ');
+    h+=`<div class="sv-bk-row"><div class="sv-bk-crop"><span style="display:inline-block;width:8px;height:8px;background:${c.color};border-radius:2px"></span>${c.name}</div><div class="sv-bk-vals">${qty?qty+' · ':''}${formatKES(c.kes)}/=</div></div>`;
+  });
+  return h+'</div>';
+}
+function toggleBreakdown(which){
+  const el=document.getElementById(which+'Breakdown');
+  if(el)el.style.display=el.style.display==='none'?'block':'none';
+}
+
+// ================================================================
+// SHUGHULI / ACTIVITY LOG
+// ================================================================
+let _actType='spray';
+let _actHand='Rod';
+let _actSelBeds=new Set();
+let _editingActId=null;
+let _shughuliFilter='all';
+
+const ACT_TYPES={
+  spray:{icon:'🧪',name:'Spray',sw:'Dawa',cls:'sh-type-spray'},
+  weed:{icon:'🌾',name:'Weed',sw:'Palilia',cls:'sh-type-weed'},
+  till:{icon:'⛏',name:'Till',sw:'Lima',cls:'sh-type-till'},
+  observe:{icon:'👁',name:'Observe',sw:'Angalia',cls:'sh-type-observe'},
+  other:{icon:'📋',name:'Other',sw:'Nyingine',cls:'sh-type-other'}
+};
+
+function renderShughuli(){
+  const sv=document.getElementById('shInner');
+  const sorted=[...activities].sort((a,b)=>b.createdAt-a.createdAt);
+  const filtered=_shughuliFilter==='all'?sorted:sorted.filter(a=>a.type===_shughuliFilter);
+
+  let h='';
+  h+=`<button class="sh-add-btn" onclick="openActModal()">+ Shughuli Mpya / New Activity</button>`;
+
+  // Filter row
+  h+=`<div class="sh-filter-row">`;
+  h+=`<button class="btn btn-s${_shughuliFilter==='all'?' act':''}" onclick="_shughuliFilter='all';renderShughuli()">All</button>`;
+  Object.entries(ACT_TYPES).forEach(([k,v])=>{
+    h+=`<button class="btn btn-s${_shughuliFilter===k?' act':''}" onclick="_shughuliFilter='${k}';renderShughuli()">${v.icon} ${v.name}</button>`;
+  });
+  h+=`</div>`;
+
+  if(!filtered.length){
+    h+=`<div class="sv-empty"><div class="sv-empty-icon">🌿</div>No activities logged yet.<br><span style="font-size:11px;color:var(--ink3)">Bado hakuna shughuli. Bonyeza kitufe kuanza.</span></div>`;
+  } else {
+    filtered.forEach(a=>{
+      const at=ACT_TYPES[a.type]||ACT_TYPES.other;
+      // Summarize beds nicely
+      const bedSummary=actBedSummary(a.beds);
+      h+=`<div class="sh-item" onclick="shToggle('${a.id}')">`;
+      h+=`<div class="sh-item-icon ${at.cls}">${at.icon}</div>`;
+      h+=`<div class="sh-item-info">`;
+      h+=`<div class="sh-item-title">${at.name} / ${at.sw}${a.product?' — '+a.product:''}</div>`;
+      if(a.details)h+=`<div class="sh-item-detail">${a.details}</div>`;
+      h+=`<div class="sh-item-meta">${formatDate(a.date)} · ${a.recordedBy} · ${bedSummary.short}</div>`;
+      // Expandable section
+      h+=`<div class="sh-item-expand" id="shExp_${a.id}">`;
+      if(bedSummary.full)h+=`<div class="sh-item-beds"><strong>Beds:</strong> ${bedSummary.full}</div>`;
+      if(a.rate)h+=`<div style="font-size:10px;color:var(--ink2);margin-bottom:4px"><strong>Rate:</strong> ${a.rate}</div>`;
+      h+=`<button class="sh-item-edit-btn" onclick="event.stopPropagation();editActivity('${a.id}')">✎ Edit / Hariri</button>`;
+      h+=`</div>`;
+      h+=`</div>`;
+      h+=`<div class="sh-item-actions"><button class="sv-item-del" onclick="event.stopPropagation();deleteActivity('${a.id}')">✕</button></div>`;
+      h+=`</div>`;
+    });
+  }
+  sv.innerHTML=h;
+}
+
+// Summarize bed IDs into readable format like "A1-S1 (beds 1-5), A1-S2"
+function actBedSummary(bedIds){
+  if(!bedIds||!bedIds.length)return{short:'General',full:''};
+  if(bedIds.length<=3){
+    const names=bedIds.map(id=>{const b=beds.find(x=>x.id===id);return b?`${b.block}-S${b.sub}-${b.num}`:'?'});
+    return{short:names.join(', '),full:names.join(', ')};
+  }
+  // Group by block+sub
+  const groups={};
+  bedIds.forEach(id=>{
+    const b=beds.find(x=>x.id===id);if(!b)return;
+    const key=b.block+'-S'+b.sub;
+    if(!groups[key])groups[key]=[];
+    groups[key].push(b.num);
+  });
+  const parts=[];
+  Object.entries(groups).forEach(([key,nums])=>{
+    nums.sort((a,b)=>a-b);
+    // Check if consecutive
+    const isConsec=nums.length>1&&nums[nums.length-1]-nums[0]===nums.length-1;
+    if(isConsec)parts.push(`${key} beds ${nums[0]}-${nums[nums.length-1]}`);
+    else parts.push(`${key} (${nums.join(',')})`);
+  });
+  const short=parts.length<=2?parts.join(', '):parts[0]+' +'+(parts.length-1)+' more';
+  return{short,full:parts.join(', ')};
+}
+
+function shToggle(id){
+  const el=document.getElementById('shExp_'+id);
+  if(el)el.classList.toggle('show');
+}
+
+function openActModal(editId){
+  _editingActId=editId||null;
+  _actOpenSub=null;
+  const modal=document.getElementById('actModal');
+  modal.classList.add('show');
+
+  if(editId){
+    const a=activities.find(x=>x.id===editId);
+    if(!a){closeActModal();return}
+    document.getElementById('actModalTitle').textContent='✎ Edit Activity / Hariri Shughuli';
+    document.getElementById('actDate').value=a.date;
+    document.getElementById('actProduct').value=a.product||'';
+    document.getElementById('actRate').value=a.rate||'';
+    document.getElementById('actDetails').value=a.details||'';
+    _actType=a.type||'spray';
+    _actHand=a.recordedBy||'Rod';
+    _actSelBeds=new Set(a.beds||[]);
+  } else {
+    document.getElementById('actModalTitle').textContent='🌿 New Activity / Shughuli Mpya';
+    document.getElementById('actDate').value=todayStr();
+    document.getElementById('actProduct').value='';
+    document.getElementById('actRate').value='';
+    document.getElementById('actDetails').value='';
+    _actType='spray';_actHand='Rod';_actSelBeds=new Set();
+  }
+
+  // Set UI state
+  document.querySelectorAll('#actTypeBtns .act-type-btn').forEach(el=>{el.classList.toggle('act',el.dataset.type===_actType)});
+  document.querySelectorAll('#actHandBtns .hand-btn').forEach(el=>{el.classList.toggle('act',el.dataset.hand===_actHand)});
+  document.getElementById('actSprayFields').style.display=_actType==='spray'?'block':'none';
+  document.getElementById('actBedsSection').style.display=_actType==='other'?'none':'block';
+
+  // Product suggestions from past activities
+  const dl=document.getElementById('productList');dl.innerHTML='';
+  const prods=new Set();activities.forEach(a=>{if(a.product)prods.add(a.product)});
+  [...prods].sort().forEach(p=>dl.innerHTML+=`<option value="${p}">`);
+
+  renderActBedPicker();
+}
+
+function editActivity(id){openActModal(id)}
+
+function closeActModal(){document.getElementById('actModal').classList.remove('show');_editingActId=null}
+
+function setActType(t,el){
+  _actType=t;
+  document.querySelectorAll('#actTypeBtns .act-type-btn').forEach(b=>b.classList.remove('act'));
+  el.classList.add('act');
+  document.getElementById('actSprayFields').style.display=t==='spray'?'block':'none';
+  document.getElementById('actBedsSection').style.display=t==='other'?'none':'block';
+  if(t==='other')_actSelBeds=new Set();
+}
+function setActHand(h,el){
+  _actHand=h;
+  document.querySelectorAll('#actHandBtns .hand-btn').forEach(b=>b.classList.remove('act'));
+  el.classList.add('act');
+}
+
+let _actOpenSub=null; // e.g. 'B1-2' for activity bed picker
+
+function renderActBedPicker(){
+  const picker=document.getElementById('actBedPicker');
+  let h='<div style="font-size:9px;color:var(--ink3);margin-bottom:4px;font-family:\'Space Mono\',monospace">Tap sub to pick individual beds</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px">';
+  ['A1','A2','A3','A4','B1','B2','B3','B4'].forEach(bl=>{
+    const bds=beds.filter(b=>b.block===bl);
+    const allOn=bds.length>0&&bds.every(b=>_actSelBeds.has(b.id));
+    const subDef=BLOCK_SUBS[bl];
+    let sh=`<div class="qs-blk"><div class="qs-blk-name${allOn?' on':''}" onclick="actToggleBlock('${bl}')">${bl}</div><div class="qs-subs">`;
+    subDef.subs.forEach((s,i)=>{
+      const subBeds=bds.filter(b=>b.sub===(i+1));
+      const sOn=subBeds.length>0&&subBeds.every(b=>_actSelBeds.has(b.id));
+      const someOn=subBeds.some(b=>_actSelBeds.has(b.id));
+      sh+=`<span class="qs-sub${sOn?' on':''}" style="${someOn&&!sOn?'border-color:var(--g2);color:var(--g2)':''}" onclick="actExpandSub('${bl}',${i+1})">S${i+1}</span>`;
+    });
+    sh+=`</div></div>`;h+=sh;
+  });
+  h+=`</div>`;
+
+  // Individual bed panel
+  if(_actOpenSub){
+    const [obl,osub]=_actOpenSub.split('-');
+    const subBeds=beds.filter(b=>b.block===obl&&b.sub===+osub).sort((a,b)=>a.num-b.num);
+    if(subBeds.length){
+      const allOn=subBeds.every(b=>_actSelBeds.has(b.id));
+      h+=`<div class="qs-beds-panel"><div class="qs-beds-header"><span>${obl} S${osub} — ${subBeds.length} beds</span><span style="display:flex;gap:6px"><span style="font-size:9px;cursor:pointer;color:var(--g2);font-weight:600" onclick="actToggleSub('${obl}',${osub})">${allOn?'Deselect':'Select'} all</span><span class="qs-beds-close" onclick="_actOpenSub=null;renderActBedPicker()">✕</span></span></div>`;
+      h+=`<div class="qs-beds-grid">`;
+      subBeds.forEach(b=>{
+        const isOn=_actSelBeds.has(b.id);
+        const ci=CROPS[b.crop]||CROPS.none;
+        h+=`<div class="qs-bed${isOn?' on':''}${ci.p?' planted':''}" onclick="actToggleBed('${b.id}')" title="${ci.n}">${b.num}</div>`;
+      });
+      h+=`</div></div>`;
+    }
+  }
+
+  if(_actSelBeds.size)h+=`<div style="font-size:10px;color:var(--g1);margin-top:4px;font-weight:600">${_actSelBeds.size} beds selected</div>`;
+  picker.innerHTML=h;
+}
+function actExpandSub(bl,sub){const key=bl+'-'+sub;_actOpenSub=_actOpenSub===key?null:key;renderActBedPicker()}
+function actToggleBlock(bl){
+  const bds=beds.filter(b=>b.block===bl);
+  const allOn=bds.every(b=>_actSelBeds.has(b.id));
+  bds.forEach(b=>allOn?_actSelBeds.delete(b.id):_actSelBeds.add(b.id));
+  _actOpenSub=null;renderActBedPicker();
+}
+function actToggleSub(bl,sub){
+  const bds=beds.filter(b=>b.block===bl&&b.sub===sub);
+  const allOn=bds.every(b=>_actSelBeds.has(b.id));
+  bds.forEach(b=>allOn?_actSelBeds.delete(b.id):_actSelBeds.add(b.id));
+  renderActBedPicker();
+}
+function actToggleBed(id){
+  if(_actSelBeds.has(id))_actSelBeds.delete(id);else _actSelBeds.add(id);
+  renderActBedPicker();
+}
+
+async function saveActivity(){
+  const date=document.getElementById('actDate').value;
+  const product=document.getElementById('actProduct').value.trim();
+  const rate=document.getElementById('actRate').value.trim();
+  const details=document.getElementById('actDetails').value.trim();
+
+  if(!date){alert('Date required / Tarehe inahitajika');return}
+  if(_actType!=='other'&&!_actSelBeds.size){alert('Select beds / Chagua vitanda');return}
+
+  if(_editingActId){
+    // Update existing
+    const idx=activities.findIndex(a=>a.id===_editingActId);
+    if(idx>=0){
+      activities[idx]={...activities[idx],date,type:_actType,beds:_actType==='other'?[]:[..._actSelBeds],recordedBy:_actHand,product:_actType==='spray'?product:'',rate:_actType==='spray'?rate:'',details};
+    }
+    closeActModal();
+    renderShughuli();
+    await save();
+    sS(`<span class="ok">✓ Activity updated</span>`);
+  } else {
+    const activity={
+      id:'act_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+      date,type:_actType,
+      beds:_actType==='other'?[]:[..._actSelBeds],
+      recordedBy:_actHand,
+      product:_actType==='spray'?product:'',
+      rate:_actType==='spray'?rate:'',
+      details,
+      createdAt:Date.now()
+    };
+
+    activities.push(activity);
+    closeActModal();
+    renderShughuli();
+    await save();
+    sS(`<span class="ok">✓ Activity logged: ${ACT_TYPES[_actType].name}</span>`);
+  }
+}
+
+async function deleteActivity(id){
+  if(!confirm('Delete this activity? / Futa shughuli hii?'))return;
+  activities=activities.filter(a=>a.id!==id);
+  renderShughuli();
+  await save();
+  sS('<span class="ok">✓ Activity deleted</span>');
+}
+
+// Get activities for a specific bed (for bed detail panel)
+function bedActivities(bedId){
+  return activities.filter(a=>a.beds&&a.beds.includes(bedId)).sort((a,b)=>b.createdAt-a.createdAt).slice(0,10);
+}
+
+// ================================================================
+// EXPENSES (MATUMIZI)
+// ================================================================
+const EXP_CATS={
+  seeds:{icon:'🌱',name:'Seeds',sw:'Mbegu'},
+  fertilizer:{icon:'🧪',name:'Fertilizer',sw:'Mbolea'},
+  chemicals:{icon:'💊',name:'Chemicals',sw:'Dawa'},
+  labor:{icon:'👷',name:'Labor',sw:'Vibarua'},
+  water:{icon:'💧',name:'Water',sw:'Maji'},
+  transport:{icon:'🚛',name:'Transport',sw:'Usafiri'},
+  equipment:{icon:'🔧',name:'Equipment',sw:'Vifaa'},
+  lease:{icon:'📄',name:'Lease',sw:'Kodi'},
+  other:{icon:'📦',name:'Other',sw:'Nyingine'}
+};
+let _expCat='seeds';
+let _expMonthOffset=0;
+let _editingExpId=null;
+
+function renderExpenses(){
+  const sv=document.getElementById('expInner');
+  const today=todayStr();
+  const viewMS=addMonths(monthStart(today),_expMonthOffset);
+  const viewME=monthEnd(viewMS.slice(0,7));
+  const isCurrentMonth=_expMonthOffset===0;
+
+  const monthExps=expenses.filter(e=>e.date>=viewMS&&e.date<=viewME);
+  const monthTotal=monthExps.reduce((s,e)=>s+e.amount,0);
+
+  // By category
+  const byCat={};
+  monthExps.forEach(e=>{if(!byCat[e.category])byCat[e.category]=0;byCat[e.category]+=e.amount});
+
+  let h='';
+  h+=`<button class="exp-add-btn" onclick="openExpModal()">+ Matumizi Mapya / New Expense</button>`;
+
+  // Month nav
+  h+=`<div class="exp-month-nav">`;
+  h+=`<button class="sv-nav-btn" onclick="_expMonthOffset--;renderExpenses()">‹</button>`;
+  h+=`<div class="exp-month-label">${formatMonth(viewMS)}</div>`;
+  h+=`<button class="sv-nav-btn" onclick="_expMonthOffset++;renderExpenses()"${isCurrentMonth?' style="visibility:hidden"':''}>›</button>`;
+  h+=`</div>`;
+
+  // Total
+  h+=`<div style="text-align:center;margin-bottom:14px"><div style="font-size:10px;color:var(--ink3);font-family:'Space Mono',monospace;text-transform:uppercase">Total Expenses</div><div style="font-size:24px;font-weight:900;color:var(--err);font-family:'Space Mono',monospace">KES ${formatKES(monthTotal)}</div></div>`;
+
+  // Categories
+  h+=`<div class="sv-section">By Category / Kwa Aina</div>`;
+  Object.entries(EXP_CATS).forEach(([k,v])=>{
+    const amt=byCat[k]||0;
+    if(!amt)return;
+    h+=`<div class="exp-cat-row"><div class="exp-cat-name">${v.icon} ${v.name} / ${v.sw}</div><div class="exp-cat-amt">KES ${formatKES(amt)}</div></div>`;
+  });
+
+  // Recent items
+  h+=`<div class="sv-section" style="margin-top:14px">Details / Maelezo<span class="sv-sec-r">${monthExps.length} items</span></div>`;
+  const sorted=[...monthExps].sort((a,b)=>b.createdAt-a.createdAt);
+  if(!sorted.length){
+    h+=`<div class="sv-empty" style="padding:20px"><div class="sv-empty-icon">📊</div>No expenses this month</div>`;
+  } else {
+    sorted.forEach(e=>{
+      const cat=EXP_CATS[e.category]||EXP_CATS.other;
+      h+=`<div class="exp-item"><div style="flex:1"><div class="exp-item-cat">${cat.icon} ${cat.name}</div>${e.note?`<div class="exp-item-note">${e.note}</div>`:''}<div class="exp-item-date">${formatDate(e.date)}</div></div><div class="exp-item-amt">-${formatKES(e.amount)}</div><button class="sv-item-del" onclick="event.stopPropagation();deleteExpense('${e.id}')">✕</button></div>`;
+    });
+  }
+  sv.innerHTML=h;
+}
+
+function openExpModal(){
+  _editingExpId=null;_expCat='seeds';
+  document.getElementById('expModal').classList.add('show');
+  document.getElementById('expModalTitle').textContent='📊 New Expense / Matumizi Mapya';
+  document.getElementById('expDate').value=todayStr();
+  document.getElementById('expAmount').value='';
+  document.getElementById('expNote').value='';
+  document.querySelectorAll('#expCatBtns .exp-cat-btn').forEach(el=>{el.classList.toggle('act',el.dataset.cat==='seeds')});
+}
+function closeExpModal(){document.getElementById('expModal').classList.remove('show')}
+
+function setExpCat(c,el){
+  _expCat=c;
+  document.querySelectorAll('#expCatBtns .exp-cat-btn').forEach(b=>b.classList.remove('act'));
+  el.classList.add('act');
+}
+
+async function saveExpense(){
+  const date=document.getElementById('expDate').value;
+  const amount=parseFloat(document.getElementById('expAmount').value)||0;
+  const note=document.getElementById('expNote').value.trim();
+
+  if(!amount){alert('Enter amount / Weka kiasi');return}
+
+  expenses.push({
+    id:'exp_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+    date,category:_expCat,amount,note,createdAt:Date.now()
+  });
+  closeExpModal();
+  renderExpenses();
+  await save();
+  sS(`<span class="ok">✓ Expense recorded: KES ${formatKES(amount)}</span>`);
+}
+
+async function deleteExpense(id){
+  if(!confirm('Delete this expense? / Futa matumizi haya?'))return;
+  expenses=expenses.filter(e=>e.id!==id);
+  renderExpenses();
+  await save();
+  sS('<span class="ok">✓ Expense deleted</span>');
+}
+
+// ================================================================
+// HARVEST & STORAGE
+// ================================================================
+let _hvUnit='kg';
+let _hvDest='sell';
+let _hvHand='Rod';
+let _hvSelBeds=new Set();
+let _hvOpenSub=null;
+
+// --- Storage inventory: harvests with dest=store, minus sold amounts ---
+function getStorageInventory(){
+  const items=[];
+  harvests.filter(h=>h.destination==='store').forEach(h=>{
+    // Sum sales linked to this harvest
+    const sold=sales.filter(s=>s.fromHarvest===h.id).reduce((sum,s)=>sum+s.qty,0);
+    const remaining=h.qty-sold;
+    if(remaining>0){
+      items.push({harvestId:h.id,crop:h.crop,qty:h.qty,remaining,unit:h.unit,date:h.date});
+    }
+  });
+  return items;
+}
+
+// --- Harvest bed picker (reuse pattern) ---
+function renderHvBedPicker(){
+  const picker=document.getElementById('hvBedPicker');
+  let h='<div style="font-size:9px;color:var(--ink3);margin-bottom:4px;font-family:\'Space Mono\',monospace">Tap sub to pick individual beds</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px">';
+  ['A1','A2','A3','A4','B1','B2','B3','B4'].forEach(bl=>{
+    const bds=beds.filter(b=>b.block===bl);
+    const allOn=bds.length>0&&bds.every(b=>_hvSelBeds.has(b.id));
+    const subDef=BLOCK_SUBS[bl];
+    let sh='<div class="qs-blk"><div class="qs-blk-name'+(allOn?' on':'')+'" onclick="hvToggleBlock(\''+bl+'\')">'+bl+'</div><div class="qs-subs">';
+    subDef.subs.forEach((s,i)=>{
+      const subBeds=bds.filter(b=>b.sub===(i+1));
+      const sOn=subBeds.length>0&&subBeds.every(b=>_hvSelBeds.has(b.id));
+      const someOn=subBeds.some(b=>_hvSelBeds.has(b.id));
+      sh+='<span class="qs-sub'+(sOn?' on':'')+'" style="'+(someOn&&!sOn?'border-color:var(--g2);color:var(--g2)':'')+'" onclick="hvExpandSub(\''+bl+'\','+(i+1)+')">S'+(i+1)+'</span>';
+    });
+    sh+='</div></div>';h+=sh;
+  });
+  h+='</div>';
+
+  if(_hvOpenSub){
+    const parts=_hvOpenSub.split('-');const obl=parts[0],osub=+parts[1];
+    const subBeds=beds.filter(b=>b.block===obl&&b.sub===osub).sort((a,b)=>a.num-b.num);
+    if(subBeds.length){
+      const allOn=subBeds.every(b=>_hvSelBeds.has(b.id));
+      h+='<div class="qs-beds-panel"><div class="qs-beds-header"><span>'+obl+' S'+osub+' — '+subBeds.length+' beds</span><span style="display:flex;gap:6px"><span style="font-size:9px;cursor:pointer;color:var(--g2);font-weight:600" onclick="hvToggleSub(\''+obl+'\','+osub+')">'+(allOn?'Deselect':'Select')+' all</span><span class="qs-beds-close" onclick="_hvOpenSub=null;renderHvBedPicker()">✕</span></span></div>';
+      h+='<div class="qs-beds-grid">';
+      subBeds.forEach(b=>{
+        const isOn=_hvSelBeds.has(b.id);
+        const ci=CROPS[b.crop]||CROPS.none;
+        h+='<div class="qs-bed'+(isOn?' on':'')+(ci.p?' planted':'')+'" onclick="hvToggleBed(\''+b.id+'\')" title="'+ci.n+'">'+b.num+'</div>';
+      });
+      h+='</div></div>';
+    }
+  }
+
+  if(_hvSelBeds.size)h+='<div style="font-size:10px;color:var(--g1);margin-top:4px;font-weight:600">'+_hvSelBeds.size+' beds selected</div>';
+  picker.innerHTML=h;
+
+  // Auto-detect crop from selected beds
+  updateHvCropDetect();
+}
+
+function hvExpandSub(bl,sub){const key=bl+'-'+sub;_hvOpenSub=_hvOpenSub===key?null:key;renderHvBedPicker()}
+function hvToggleBlock(bl){const bds=beds.filter(b=>b.block===bl);const allOn=bds.every(b=>_hvSelBeds.has(b.id));bds.forEach(b=>allOn?_hvSelBeds.delete(b.id):_hvSelBeds.add(b.id));_hvOpenSub=null;renderHvBedPicker()}
+function hvToggleSub(bl,sub){const bds=beds.filter(b=>b.block===bl&&b.sub===sub);const allOn=bds.every(b=>_hvSelBeds.has(b.id));bds.forEach(b=>allOn?_hvSelBeds.delete(b.id):_hvSelBeds.add(b.id));renderHvBedPicker()}
+function hvToggleBed(id){if(_hvSelBeds.has(id))_hvSelBeds.delete(id);else _hvSelBeds.add(id);renderHvBedPicker()}
+
+function updateHvCropDetect(){
+  const selBedObjs=beds.filter(b=>_hvSelBeds.has(b.id));
+  const crops=[...new Set(selBedObjs.map(b=>b.crop).filter(c=>c!=='none'&&c!=='uncultivated'))];
+  const detect=document.getElementById('hvCropDetect');
+  const overr=document.getElementById('hvCropOverride');
+
+  if(!crops.length){
+    detect.innerHTML='<div style="font-size:10px;color:var(--ink3);margin-bottom:8px">Select beds to auto-detect crop</div>';
+    overr.style.display='none';
+  } else if(crops.length===1){
+    const ci=CROPS[crops[0]]||{n:crops[0]};
+    detect.innerHTML='<div class="hv-crop-detect">🌱 Crop detected: <strong>'+ci.n+(ci.sw?' / '+ci.sw:'')+'</strong></div>';
+    overr.style.display='none';
+  } else {
+    detect.innerHTML='<div class="hv-crop-detect" style="background:#fef8e8;color:var(--warn)">⚠ Multiple crops in selection — choose below</div>';
+    overr.style.display='block';
+    const sel=document.getElementById('hvCropSel');
+    sel.innerHTML='';
+    crops.forEach(c=>{const ci=CROPS[c]||{n:c};sel.innerHTML+='<option value="'+c+'">'+ci.n+'</option>'});
+  }
+}
+
+function openHvModal(){
+  _hvSelBeds=new Set();_hvOpenSub=null;_hvUnit='kg';_hvDest='sell';_hvHand='Rod';
+  document.getElementById('hvModal').classList.add('show');
+  document.getElementById('hvDate').value=todayStr();
+  document.getElementById('hvQty').value='';
+  document.getElementById('hvNotes').value='';
+
+  document.querySelectorAll('#hvUnitToggle .unit-opt').forEach(el=>el.classList.toggle('act',el.dataset.unit==='kg'));
+  document.querySelectorAll('#hvDestBtns .hv-dest-btn').forEach(el=>el.classList.toggle('act',el.dataset.dest==='sell'));
+  document.querySelectorAll('#hvHandBtns .hand-btn').forEach(el=>el.classList.toggle('act',el.dataset.hand==='Rod'));
+  document.getElementById('hvCropOverride').style.display='none';
+
+  renderHvBedPicker();
+}
+function closeHvModal(){document.getElementById('hvModal').classList.remove('show')}
+
+function setHvUnit(u,el){_hvUnit=u;document.querySelectorAll('#hvUnitToggle .unit-opt').forEach(b=>b.classList.remove('act'));el.classList.add('act')}
+function setHvDest(d,el){_hvDest=d;document.querySelectorAll('#hvDestBtns .hv-dest-btn').forEach(b=>b.classList.remove('act'));el.classList.add('act')}
+function setHvHand(h,el){_hvHand=h;document.querySelectorAll('#hvHandBtns .hand-btn').forEach(b=>b.classList.remove('act'));el.classList.add('act')}
+
+async function saveHarvest(){
+  const date=document.getElementById('hvDate').value;
+  const qty=parseFloat(document.getElementById('hvQty').value)||0;
+  const notes=document.getElementById('hvNotes').value.trim();
+
+  if(!_hvSelBeds.size){alert('Select beds / Chagua vitanda');return}
+  if(!qty){alert('Enter quantity / Weka kiasi');return}
+
+  // Determine crop
+  const selBedObjs=beds.filter(b=>_hvSelBeds.has(b.id));
+  const crops=[...new Set(selBedObjs.map(b=>b.crop).filter(c=>c!=='none'&&c!=='uncultivated'))];
+  let crop;
+  if(crops.length===1)crop=crops[0];
+  else if(crops.length>1){crop=document.getElementById('hvCropSel').value;if(!crop){alert('Select crop');return}}
+  else{alert('Selected beds have no crop planted');return}
+
+  const harvest={
+    id:'hv_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+    date,crop,qty,unit:_hvUnit,
+    beds:[..._hvSelBeds],
+    recordedBy:_hvHand,
+    destination:_hvDest,
+    notes,
+    createdAt:Date.now()
+  };
+
+  harvests.push(harvest);
+  closeHvModal();
+  await save();
+
+  if(_hvDest==='sell'){
+    // Open sale modal pre-filled
+    openSaleModal();
+    document.getElementById('sCrop').value=crop;
+    document.getElementById('sQty').value=qty;
+    document.getElementById('sUnitLabel').textContent=_hvUnit==='kg'?'(kg)':'(pcs)';
+    document.getElementById('sPriceLabel').textContent=_hvUnit==='kg'?'kg':'piece';
+    _saleUnit=_hvUnit;
+    // Store harvestId link
+    document.getElementById('saleModal').dataset.fromHarvest=harvest.id;
+    sS('<span class="ok">✓ Harvested — now set price to complete sale</span>');
+  } else {
+    renderSales();
+    const destLabel=_hvDest==='store'?'stored / imehifadhiwa':'carried home / imepelekwa nyumbani';
+    sS('<span class="ok">✓ Harvest '+destLabel+': '+qty+_hvUnit+'</span>');
+  }
+}
+
+// --- Sell from Storage ---
+function sellFromStorage(harvestId,crop,remaining,unit){
+  openSaleModal();
+  document.getElementById('sCrop').value=crop;
+  document.getElementById('sQty').value=remaining;
+  _saleUnit=unit;
+  document.querySelectorAll('#sUnitToggle .unit-opt').forEach(el=>el.classList.toggle('act',el.dataset.unit===unit));
+  document.getElementById('sUnitLabel').textContent=unit==='kg'?'(kg)':'(pcs)';
+  document.getElementById('sPriceLabel').textContent=unit==='kg'?'kg':'piece';
+  document.getElementById('saleModal').dataset.fromHarvest=harvestId;
+  calcTotal();
+  sS('<span class="ok">Set price to sell from storage</span>');
+}
+
+// --- Bed harvest history ---
+function bedHarvests(bedId){
+  return harvests.filter(h=>h.beds&&h.beds.includes(bedId)).sort((a,b)=>b.createdAt-a.createdAt).slice(0,10);
+}
+
+// ================================================================
+// SVG MAP (same as v6 render)
+// ================================================================
+const S=document.getElementById('S'),mv=document.getElementById('mv'),tipEl=document.getElementById('tip');
+const views={A:{x:FA_L-70,y:FA_T-35,w:FA_R-FA_L+160,h:FA_B-FA_T+110},B:{x:FB_L-60,y:FB_T-30,w:FB_R-FB_L+130,h:FB_H+90},all:{x:WF-70,y:FB_T-35,w:FA_R-WF+160,h:FA_B-FB_T+110}};
+let vb={...views.A};
+function svb(){S.setAttribute('viewBox',`${vb.x} ${vb.y} ${vb.w} ${vb.h}`)}
+function setView(v){vb={...views[v]};svb();document.querySelectorAll('#vA,#vB,#vAll').forEach(b=>b.classList.remove('act'));document.getElementById(v==='A'?'vA':v==='B'?'vB':'vAll').classList.add('act')}
+
+function E(t,a){const e=document.createElementNS('http://www.w3.org/2000/svg',t);for(const[k,v]of Object.entries(a||{}))e.setAttribute(k,v);return e}
+function T(x,y,t,a){const e=E('text',{x,y,...a});e.textContent=t;S.appendChild(e)}
+function R(x,y,w,h,a){S.appendChild(E('rect',{x,y,width:w,height:h,...a}))}
+function L(x1,y1,x2,y2,a){S.appendChild(E('line',{x1,y1,x2,y2,...a}))}
+
+let bedRects={};
+
+function renderMap(){
+  S.innerHTML='';svb();
+  const st=E('style');st.textContent=`.ft{font-family:'Outfit';font-size:32px;font-weight:900;fill:#2e2a24}.ft2{font-family:'Outfit';font-size:22px;font-weight:700;fill:#6a6258}.bt{font-family:'Outfit';font-size:18px;font-weight:800;fill:#2e2a24}.dm{font-family:'Space Mono',monospace;font-size:12px;fill:#8a7d6b}.dm2{font-family:'Space Mono',monospace;font-size:14px;fill:#6a6258;font-weight:700}.it{font-family:'Space Mono',monospace;font-size:10px;fill:#8a7d6b}.bl{font-family:'Space Mono',monospace;font-size:11px;fill:#fff;font-weight:700}.gt{font-family:'Outfit';font-size:14px;font-weight:700;fill:#c88a10}.sc2{font-family:'Space Mono',monospace;font-size:10px;fill:#a89e8e}`;S.appendChild(st);
+
+  R(vb.x-100,vb.y-100,vb.w+200,vb.h+200,{fill:'#f6f3ec'});
+  R(FA_L-5,FA_T-5,FA_R-FA_L+10,FA_B-FA_T+10,{fill:'#dce4be',rx:4});
+  R(FB_L-5,FB_T-5,FB_R-FB_L+10,FB_H+10,{fill:'#dce4be',rx:4});
+  R(FA_L-20,FA_B+2,FA_R-FA_L+40,30,{fill:'#c0bab0',rx:2});
+  T((FA_L+FA_R)/2,FA_B+22,'— R O A D —',{'text-anchor':'middle',class:'dm',fill:'#a0988e'});
+  R(FA_L,FA_T,FA_R-FA_L,FA_B-FA_T,{fill:'#ece7db',stroke:'#6a6050','stroke-width':2.5,rx:2});
+  T(FA_R+30,(FA_T+FA_B)/2-20,'Farm A',{'text-anchor':'middle',class:'ft',transform:`rotate(90,${FA_R+30},${(FA_T+FA_B)/2-20})`});
+  T(FA_R+60,(FA_T+FA_B)/2,'48m',{'text-anchor':'middle',class:'dm2',transform:`rotate(90,${FA_R+60},${(FA_T+FA_B)/2})`});
+  T((FA_L+FA_R)/2,FA_B+48,'110m',{'text-anchor':'middle',class:'dm2'});
+  R(FB_L,FB_T,FB_R-FB_L,FB_H,{fill:'#ece7db',stroke:'#6a6050','stroke-width':2.5,rx:2});
+  T(FB_L-30,(FB_T+FB_B)/2,'Farm B',{'text-anchor':'middle',class:'ft',transform:`rotate(-90,${FB_L-30},${(FB_T+FB_B)/2})`});
+  T(FB_L-60,(FB_T+FB_B)/2+20,'wall',{'text-anchor':'middle',class:'ft2',transform:`rotate(-90,${FB_L-60},${(FB_T+FB_B)/2+20})`});
+  T((FB_L+FB_R)/2,FB_B+16,'70m',{'text-anchor':'middle',class:'dm2'});
+
+  // Infrastructure
+  R(EPA_L,A_BT-8,EPA_W,A_BS+16,{fill:'#ddd0b4',stroke:'#b8a888','stroke-width':1,rx:1});
+  T(EPA_L+EPA_W/2,(FA_T+FA_B)/2,'Path',{'text-anchor':'middle',class:'it',transform:`rotate(-90,${EPA_L+EPA_W/2},${(FA_T+FA_B)/2})`});
+  R(P12_L,A_BT-8,P12W,A_BS+16,{fill:'#ddd0b4',stroke:'#b8a888','stroke-width':1,rx:1});
+  T(P12_L+P12W/2,(FA_T+FA_B)/2,'Path & Piping',{'text-anchor':'middle',class:'it',transform:`rotate(-90,${P12_L+P12W/2},${(FA_T+FA_B)/2})`});
+  R(D23_L,A_BT-8,D23W,A_BS+16,{fill:'#c4dce8',stroke:'#6aa0b8','stroke-width':1,rx:1});
+  T(D23_L+D23W/2,(FA_T+FA_B)/2,'Drainage',{'text-anchor':'middle',class:'it',fill:'#5a8ea8',transform:`rotate(-90,${D23_L+D23W/2},${(FA_T+FA_B)/2})`});
+  R(P34_L,A_BT-8,P34W,A_BS+16,{fill:'#ddd0b4',stroke:'#b8a888','stroke-width':1,rx:1});
+  T(P34_L+P34W/2,(FA_T+FA_B)/2,'Path & Piping',{'text-anchor':'middle',class:'it',transform:`rotate(-90,${P34_L+P34W/2},${(FA_T+FA_B)/2})`});
+
+  const by=FA_T+FA_PAD_N-2;
+  R(A1_L+8,by,48,32,{fill:'#8494a4',stroke:'#5a6a7a','stroke-width':1.5,rx:2});T(A1_L+32,by+20,'Tank',{'text-anchor':'middle',class:'bl'});
+  R(A1_L+64,by,40,28,{fill:'#c0b090',stroke:'#9a8a6a','stroke-width':1.5,rx:2});T(A1_L+84,by+18,'Store',{'text-anchor':'middle',class:'bl'});
+  R(A1_L+112,by,30,28,{fill:'#c0b090',stroke:'#9a8a6a','stroke-width':1.5,rx:2});T(A1_L+127,by+18,'KC',{'text-anchor':'middle',class:'bl'});
+  R(A1_R-55,by,55,35,{fill:'#8494a4',stroke:'#5a6a7a','stroke-width':1.5,rx:2});
+  R(A1_R-55,by+35,30,22,{fill:'#8494a4',stroke:'#5a6a7a','stroke-width':1.5,rx:2});T(A1_R-28,by+22,'House',{'text-anchor':'middle',class:'bl'});
+  T((A1_L+A1_R)/2,by+BZ+2,'22m',{'text-anchor':'middle',class:'dm'});
+  L(A1_R-10,FA_T+6,FB_L+15,FA_T+6,{stroke:'#a09888','stroke-width':1.5,'stroke-dasharray':'6 4'});
+  L(FB_L+15,FA_T+6,FB_L+15,B4_B2+15,{stroke:'#a09888','stroke-width':1.5,'stroke-dasharray':'6 4'});
+  R(A1_R-18,FA_B-4,36,6,{fill:'none',stroke:'#c88a10','stroke-width':2.5,rx:2});T(A1_R,FA_B+16,'gate',{'text-anchor':'middle',class:'gt'});
+
+  [{id:'A1',l:A1_L,r:A1_R,bt:A1_BT,bs:A1_BS,beds:35,subs:[7,10,18],len:'28m'},
+   {id:'A2',l:A2_L,r:A2_R,bt:A_BT,bs:A_BS,beds:37,subs:[10,10,17],len:'20.5m'},
+   {id:'A3',l:A3_L,r:A3_R,bt:A_BT,bs:A_BS,beds:36,subs:[10,10,16],len:'21m'},
+   {id:'A4',l:A4_L,r:A4_R,bt:A_BT,bs:A_BS,beds:36,subs:[10,10,16],len:'29m'}
+  ].forEach(b=>{const cx=(b.l+b.r)/2;R(b.l-2,b.bt-4,b.r-b.l+4,b.bs+8,{fill:'none',stroke:'#8a7d6b','stroke-width':1.8,rx:2});
+    T(cx,b.bt+b.bs+22,b.id,{'text-anchor':'middle',class:'bt'});T(cx,b.bt+b.bs+38,b.len,{'text-anchor':'middle',class:'dm'});
+    const u=b.bs/b.beds;let cum=0;for(let i=0;i<b.subs.length-1;i++){cum+=b.subs[i];L(b.l-2,b.bt+cum*u,b.r+2,b.bt+cum*u,{stroke:'#a89e8e','stroke-width':1.5,'stroke-dasharray':'5 4'})}
+    cum=0;b.subs.forEach(s=>{T(cx,b.bt+cum*u+(s*u)/2+4,`${s} beds`,{'text-anchor':'middle',class:'sc2'});cum+=s})});
+
+  R(FB_R-BM_E,FB_B-130,12,130,{fill:'#c4dce8',stroke:'#6aa0b8','stroke-width':.8,rx:1,opacity:.6});
+  const pdPL=PD_R-PD_PATH_W,pdDL=PD_L;
+  R(pdPL,FB_MAIN_T-6,PD_PATH_W,FB_MH+12,{fill:'#ddd0b4',stroke:'#b8a888','stroke-width':.8,rx:1});
+  R(pdDL,FB_MAIN_T-6,PD_DRAIN_W,FB_MH+12,{fill:'#c4dce8',stroke:'#6aa0b8','stroke-width':.8,rx:1});
+  T(pdPL+PD_PATH_W/2,FB_MAIN_T+FB_MH/2-25,'Path and Piping',{'text-anchor':'middle',class:'it',transform:`rotate(-90,${pdPL+PD_PATH_W/2},${FB_MAIN_T+FB_MH/2-25})`});
+  T(pdDL+PD_DRAIN_W/2,FB_MAIN_T+FB_MH/2+25,'Drainage',{'text-anchor':'middle',class:'it',fill:'#5a8ea8',transform:`rotate(-90,${pdDL+PD_DRAIN_W/2},${FB_MAIN_T+FB_MH/2+25})`});
+  R(P23_L2,FB_MAIN_T-6,P23_W2,FB_MH+12,{fill:'#ddd0b4',stroke:'#b8a888','stroke-width':.8,rx:1});
+  T(P23_L2+P23_W2/2,FB_MAIN_T+FB_MH/2,'Path & Piping',{'text-anchor':'middle',class:'it',transform:`rotate(-90,${P23_L2+P23_W2/2},${FB_MAIN_T+FB_MH/2})`});
+  R(pdPL,B4_T,PD_PATH_W,B4_H2,{fill:'#ddd0b4',stroke:'#b8a888','stroke-width':.8,rx:1,opacity:.5});
+  R(pdDL,B4_T,PD_DRAIN_W,B4_H2,{fill:'#c4dce8',stroke:'#6aa0b8','stroke-width':.8,rx:1,opacity:.5});
+  R(B1_R2-18,FB_B-4,36,6,{fill:'none',stroke:'#c88a10','stroke-width':2.5,rx:2});T(B1_R2,FB_B+16,'gate',{'text-anchor':'middle',class:'gt'});
+  const tkX=FB_L+12,tkY=B4_B2+2;R(tkX,tkY,55,28,{fill:'#8494a4',stroke:'#5a6a7a','stroke-width':1.5,rx:3});T(tkX+27,tkY+18,'TANK',{'text-anchor':'middle',class:'bl'});
+  const dCX=(FB_L+pdDL)/2,dCY=(B4_T+B4_B2)/2,dRX=Math.max((pdDL-FB_L-20)/2,55),dRY=Math.max(B4_H2/2-15,65);
+  S.appendChild(E('ellipse',{cx:dCX,cy:dCY,rx:dRX,ry:dRY,fill:'#b4d4e8',stroke:'#6aa4c4','stroke-width':2.5,'stroke-dasharray':'8 5'}));
+  T(dCX,dCY+5,'Defunct Dam',{'text-anchor':'middle','font-family':'Outfit','font-size':'14px',fill:'#4a88a8','font-weight':'700'});
+  L(B3_L2-6,FB_MAIN_T,B3_L2-6,FB_B,{stroke:'#a09888','stroke-width':1,'stroke-dasharray':'5 4'});
+  [{id:'B1',l:B1_L2,r:B1_R2},{id:'B2',l:B2_L2,r:B2_R2},{id:'B3',l:B3_L2,r:B3_R2}].forEach(b=>{
+    const cx=(b.l+b.r)/2;R(b.l-2,FB_MAIN_T-4,b.r-b.l+4,FB_MH+8,{fill:'none',stroke:'#8a7d6b','stroke-width':1.8,rx:2});
+    T(cx,FB_MAIN_B+20,b.id,{'text-anchor':'middle',class:'bt'});T(cx,FB_MAIN_B+36,'21.7m',{'text-anchor':'middle',class:'dm'});
+    const subs=[10,10,10,12];let cum=0;for(let i=0;i<3;i++){cum+=subs[i];L(b.l-2,FB_MAIN_T+cum*FB_BU,b.r+2,FB_MAIN_T+cum*FB_BU,{stroke:'#a89e8e','stroke-width':1.5,'stroke-dasharray':'5 4'})}
+    cum=0;subs.forEach(s=>{T(cx,FB_MAIN_T+cum*FB_BU+(s*FB_BU)/2+4,`${s} beds`,{'text-anchor':'middle',class:'sc2'});cum+=s})});
+  T(FB_R+16,(FB_MAIN_T+FB_MAIN_B)/2,'62m',{'text-anchor':'middle',class:'dm2',transform:`rotate(90,${FB_R+16},${(FB_MAIN_T+FB_MAIN_B)/2})`});
+  R(B4_L2-2,B4_T-4,B_BW+4,B4_H2+8,{fill:'none',stroke:'#8a7d6b','stroke-width':1.8,rx:2});
+  T((B4_L2+B4_R2)/2,B4_B2+20,'B4',{'text-anchor':'middle',class:'bt'});T((B4_L2+B4_R2)/2,B4_B2+36,'21.7m',{'text-anchor':'middle',class:'dm'});
+  T(B4_R2+16,(B4_T+B4_B2)/2,'40m',{'text-anchor':'middle',class:'dm2',transform:`rotate(90,${B4_R2+16},${(B4_T+B4_B2)/2})`});
+  [10,20].forEach(c=>L(B4_L2-2,B4_T+c*B4_BU,B4_R2+2,B4_T+c*B4_BU,{stroke:'#a89e8e','stroke-width':1.5,'stroke-dasharray':'5 4'}));
+  [{n:10,c:0},{n:10,c:10},{n:10,c:20}].forEach(s=>T((B4_L2+B4_R2)/2,B4_T+s.c*B4_BU+(s.n*B4_BU)/2+4,`${s.n} beds`,{'text-anchor':'middle',class:'sc2'}));
+
+  renderBeds();
+}
+
+function renderBeds(){
+  Object.values(bedRects).forEach(r=>r.remove());bedRects={};
+  beds.forEach(bed=>{
+    const ci=CROPS[bed.crop]||CROPS.none;const pl=ci.p;const iS=sel.has(bed.id);
+    const r=E('rect',{x:bed.x,y:bed.y,width:bed.w,height:bed.h,fill:ci.c,
+      stroke:iS?'#2d6a4f':(pl?'#4a3a20':'#c4b8a0'),'stroke-width':iS?2.5:(pl?1:.5),
+      rx:1.2,opacity:bed.crop==='uncultivated'?.4:(pl?.88:.6),cursor:'pointer'});
+    if(iS)r.style.filter='drop-shadow(0 0 3px rgba(45,106,79,.5))';
+    r.addEventListener('mouseenter',e=>showTip(e,bed));
+    r.addEventListener('mousemove',e=>{tipEl.style.left=(e.clientX+14)+'px';tipEl.style.top=(e.clientY-10)+'px'});
+    r.addEventListener('mouseleave',()=>tipEl.style.display='none');
+    r.addEventListener('click',e=>{e.stopPropagation();selBed(bed.id,e.shiftKey);if(!document.getElementById('pn').classList.contains('open'))togglePanel()});
+    S.appendChild(r);bedRects[bed.id]=r;
+  });
+}
+
+function showTip(e,b){const ci=CROPS[b.crop]||CROPS.none;const d=b.plantingDate?dS(b.plantingDate):null;
+  let h=`<div class="t1">${b.block}–S${b.sub}–Bed ${b.num}</div><div><span style="display:inline-block;width:8px;height:8px;background:${ci.c};border-radius:2px;margin-right:4px;vertical-align:middle"></span>${ci.n}${ci.sw?' / '+ci.sw:''}</div>`;
+  if(b.dripLines)h+=`<div style="font-size:10px;color:#888">Drip: ${b.dripLines}</div>`;
+  if(d!==null)h+=`<div class="td">${d} days</div>`;if(b.notes)h+=`<div class="t2">${b.notes}</div>`;
+  tipEl.innerHTML=h;tipEl.style.display='block';tipEl.style.left=(e.clientX+14)+'px';tipEl.style.top=(e.clientY-10)+'px'}
+
+function togglePanel(){document.getElementById('pn').classList.toggle('open')}
+
+// PAN & ZOOM
+let pan=false,px=0,py=0;
+mv.addEventListener('mousedown',e=>{pan=true;px=e.clientX;py=e.clientY});
+window.addEventListener('mousemove',e=>{if(!pan)return;vb.x-=(e.clientX-px)*(vb.w/mv.clientWidth);vb.y-=(e.clientY-py)*(vb.h/mv.clientHeight);px=e.clientX;py=e.clientY;svb()});
+window.addEventListener('mouseup',()=>pan=false);
+mv.addEventListener('wheel',e=>{e.preventDefault();const s=e.deltaY>0?1.1:.9;const r=mv.getBoundingClientRect();const mx=(e.clientX-r.left)/r.width,my=(e.clientY-r.top)/r.height;const nw=vb.w*s,nh=vb.h*s;vb.x+=(vb.w-nw)*mx;vb.y+=(vb.h-nh)*my;vb.w=nw;vb.h=nh;svb()},{passive:false});
+let ltd=0;
+mv.addEventListener('touchstart',e=>{if(e.touches.length===1){pan=true;px=e.touches[0].clientX;py=e.touches[0].clientY}if(e.touches.length===2)ltd=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY)},{passive:true});
+mv.addEventListener('touchmove',e=>{if(e.touches.length===1&&pan){vb.x-=(e.touches[0].clientX-px)*(vb.w/mv.clientWidth);vb.y-=(e.touches[0].clientY-py)*(vb.h/mv.clientHeight);px=e.touches[0].clientX;py=e.touches[0].clientY;svb()}if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const s=ltd/d;vb.w*=s;vb.h*=s;vb.x+=vb.w*(1-s)/2;vb.y+=vb.h*(1-s)/2;ltd=d;svb()}},{passive:true});
+mv.addEventListener('touchend',()=>pan=false);
+function zi(){const cx=vb.x+vb.w/2,cy=vb.y+vb.h/2;vb.w*=.7;vb.h*=.7;vb.x=cx-vb.w/2;vb.y=cy-vb.h/2;svb()}
+function zo(){const cx=vb.x+vb.w/2,cy=vb.y+vb.h/2;vb.w*=1.4;vb.h*=1.4;vb.x=cx-vb.w/2;vb.y=cy-vb.h/2;svb()}
+
+// ================================================================
+// AUTH + SYNC + INITIALIZATION
+// ================================================================
+
+function updateSyncUI(status, msg){
+  const dot=document.getElementById('syncDot');
+  const msgEl=document.getElementById('syncMsg');
+  if(!dot||!msgEl)return;
+  dot.className='sync-dot '+(status||'offline');
+  msgEl.textContent=msg||status||'';
+}
+
+function onAuthStateChanged(user, tokenReady){
+  const loginScreen=document.getElementById('loginScreen');
+  const userPill=document.getElementById('userPill');
+
+  if(user){
+    // User signed in
+    loginScreen.classList.add('hidden');
+    userPill.style.display='flex';
+    document.getElementById('userName').textContent=user.name.split(' ')[0];
+    document.getElementById('userInitial').textContent=user.name.charAt(0).toUpperCase();
+    document.getElementById('userMenuEmail').textContent=user.email;
+
+    if(user.picture){
+      document.getElementById('userInitial').innerHTML=`<img src="${user.picture}" style="width:22px;height:22px;border-radius:50%">`;
+    }
+
+    if(tokenReady){
+      // Token is ready — do full sync
+      updateSyncUI('syncing','Connecting...');
+      Sync.initializeSheet().then(()=>{
+        return Sync.fullSync();
+      }).then(()=>{
+        // Reload data from IndexedDB after sync
+        load().then(()=>{
+          renderMap();renderBeds();renderList();updatePanel();
+          if(currentTab==='sales')renderSales();
+        });
+      }).catch(e=>{
+        console.error('Initial sync failed:',e);
+        updateSyncUI('error','Sync failed');
+      });
+      Sync.startAutoSync();
+    }
+  } else {
+    // User signed out
+    loginScreen.classList.remove('hidden');
+    userPill.style.display='none';
+    Sync.stopAutoSync();
+  }
+}
+
+function toggleUserMenu(){
+  document.getElementById('userMenu').classList.toggle('show');
+}
+// Close menu on outside click
+document.addEventListener('click',e=>{
+  const menu=document.getElementById('userMenu');
+  const pill=document.getElementById('userPill');
+  if(menu&&!menu.contains(e.target)&&!pill.contains(e.target))menu.classList.remove('show');
+});
+
+async function manualSync(){
+  if(!Auth.isSignedIn()){sS('Sign in first / Ingia kwanza');return}
+  if(!navigator.onLine){sS('No internet / Hakuna mtandao');return}
+  updateSyncUI('syncing','Syncing...');
+  try{
+    await Sync.pushChanges();
+    await Sync.pullAll();
+    await load();
+    renderMap();renderBeds();renderList();updatePanel();
+    if(currentTab==='sales')renderSales();
+    if(currentTab==='shughuli')renderShughuli();
+    if(currentTab==='expenses'&&_expensesUnlocked)renderExpenses();
+    updateSyncUI('ok','Synced ✓');
+  }catch(e){
+    console.error('Manual sync failed:',e);
+    updateSyncUI('error','Failed');
+  }
+}
+
+function enterOffline(){
+  _offlineMode=true;
+  document.getElementById('loginScreen').classList.add('hidden');
+  sS('Offline mode — data saved locally only');
+}
+
+// INIT
+async function init(){
+  // 1. Open IndexedDB
+  try{
+    await DB.open();
+    _dbReady=true;
+
+    // 2. Try migrating old data from window.storage
+    const migrated=await DB.getMeta('migrated');
+    if(!migrated){
+      try{await DB.migrateFromWindowStorage()}catch(e){console.log('Migration skipped')}
+    }
+  }catch(e){
+    console.log('IndexedDB not available, using fallback storage');
+    _dbReady=false;
+  }
+
+  // 3. Load data (from IndexedDB or fallback)
+  await load();
+
+  // 4. Render the map + UI
+  renderMap();renderList();updatePanel();setView('A');
+
+  // 5. Initialize auth
+  Auth.init(onAuthStateChanged);
+
+  // 6. Initialize sync
+  Sync.init(updateSyncUI);
+
+  // 7. Show offline button if no internet
+  if(!navigator.onLine){
+    const offBtn=document.getElementById('offlineBtn');
+    if(offBtn)offBtn.style.display='block';
+  }
+  window.addEventListener('online',()=>{
+    document.getElementById('offlineBtn').style.display='none';
+    updateSyncUI('idle','Online');
+  });
+  window.addEventListener('offline',()=>{
+    document.getElementById('offlineBtn').style.display='block';
+    updateSyncUI('offline','Offline');
+  });
+
+  // 8. Register service worker
+  if('serviceWorker' in navigator){
+    try{
+      await navigator.serviceWorker.register('sw.js');
+      console.log('Service worker registered');
+      // Listen for sync messages from SW
+      navigator.serviceWorker.addEventListener('message',e=>{
+        if(e.data&&e.data.type==='SYNC_REQUESTED')Sync.pushChanges();
+      });
+    }catch(e){console.log('SW registration failed:',e)}
+  }
+}
+
+init();
+</script>
+</body>
+</html>
