@@ -6,7 +6,7 @@
 const CONFIG = {
   // Google OAuth Client ID (from Google Cloud Console)
   // Step: SETUP.md → Section 2
-  GOOGLE_CLIENT_ID: '376556459731-0njjva4bl5uol1vl0s1m9mcogjs1ebs0.apps.googleusercontent.com',
+  GOOGLE_CLIENT_ID: 376556459731-0njjva4bl5uol1vl0s1m9mcogjs1ebs0.apps.googleusercontent.com
 
   // Google Sheet ID (from the spreadsheet URL)
   // The part between /d/ and /edit in the URL
