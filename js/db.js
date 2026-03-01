@@ -29,11 +29,7 @@ const DB = (() => {
         });
       };
 
-      req.onsuccess = (e) => {
-        db = e.target.result;
-        resolve(db);
-      };
-
+      req.onsuccess = (e) => { db = e.target.result; resolve(db); };
       req.onerror = (e) => reject(e.target.error);
     });
   }
@@ -43,8 +39,7 @@ const DB = (() => {
   function put(storeName, record) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
-      const store = tx.objectStore(storeName);
-      store.put(record);
+      tx.objectStore(storeName).put(record);
       tx.oncomplete = () => resolve(record);
       tx.onerror = (e) => reject(e.target.error);
     });
@@ -53,8 +48,7 @@ const DB = (() => {
   function get(storeName, key) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readonly');
-      const store = tx.objectStore(storeName);
-      const req = store.get(key);
+      const req = tx.objectStore(storeName).get(key);
       req.onsuccess = () => resolve(req.result || null);
       req.onerror = (e) => reject(e.target.error);
     });
@@ -63,8 +57,7 @@ const DB = (() => {
   function getAll(storeName) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readonly');
-      const store = tx.objectStore(storeName);
-      const req = store.getAll();
+      const req = tx.objectStore(storeName).getAll();
       req.onsuccess = () => resolve(req.result || []);
       req.onerror = (e) => reject(e.target.error);
     });
@@ -73,8 +66,7 @@ const DB = (() => {
   function remove(storeName, key) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
-      const store = tx.objectStore(storeName);
-      store.delete(key);
+      tx.objectStore(storeName).delete(key);
       tx.oncomplete = () => resolve();
       tx.onerror = (e) => reject(e.target.error);
     });
@@ -83,8 +75,7 @@ const DB = (() => {
   function clear(storeName) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readwrite');
-      const store = tx.objectStore(storeName);
-      store.clear();
+      tx.objectStore(storeName).clear();
       tx.oncomplete = () => resolve();
       tx.onerror = (e) => reject(e.target.error);
     });
@@ -100,12 +91,20 @@ const DB = (() => {
     });
   }
 
+  // --- Timestamp helper ---
+  function stamp(record) {
+    if (!record || typeof record !== 'object') return record;
+    const now = Date.now();
+    if (!record.createdAt) record.createdAt = now;
+    record.updatedAt = now;
+    return record;
+  }
+
   // --- Sync Queue ---
-  // Every local change gets queued for sync to Google Sheets
 
   function queueSync(action, storeName, record) {
     return put('syncQueue', {
-      action,        // 'put' or 'delete'
+      action,
       store: storeName,
       recordId: record.id || record.key,
       data: record,
@@ -114,17 +113,9 @@ const DB = (() => {
     });
   }
 
-  function getSyncQueue() {
-    return getAll('syncQueue');
-  }
-
-  function clearSyncQueue() {
-    return clear('syncQueue');
-  }
-
-  function removeSyncItem(queueId) {
-    return remove('syncQueue', queueId);
-  }
+  function getSyncQueue() { return getAll('syncQueue'); }
+  function clearSyncQueue() { return clear('syncQueue'); }
+  function removeSyncItem(queueId) { return remove('syncQueue', queueId); }
 
   // --- Meta ---
 
@@ -137,14 +128,16 @@ const DB = (() => {
     return result ? result.value : null;
   }
 
-  // --- High-level data operations (with sync queue) ---
+  // --- High-level data operations (with timestamps + sync queue) ---
 
   async function saveBed(bed) {
+    stamp(bed);
     await put('beds', bed);
     await queueSync('put', 'beds', bed);
   }
 
   async function saveSale(sale) {
+    stamp(sale);
     await put('sales', sale);
     await queueSync('put', 'sales', sale);
   }
@@ -155,11 +148,13 @@ const DB = (() => {
   }
 
   async function saveHarvest(harvest) {
+    stamp(harvest);
     await put('harvests', harvest);
     await queueSync('put', 'harvests', harvest);
   }
 
   async function saveExpense(expense) {
+    stamp(expense);
     await put('expenses', expense);
     await queueSync('put', 'expenses', expense);
   }
@@ -170,6 +165,7 @@ const DB = (() => {
   }
 
   async function saveActivity(activity) {
+    stamp(activity);
     await put('activities', activity);
     await queueSync('put', 'activities', activity);
   }
@@ -180,65 +176,73 @@ const DB = (() => {
   }
 
   async function saveCreditPayment(payment) {
+    stamp(payment);
     await put('creditPayments', payment);
     await queueSync('put', 'creditPayments', payment);
   }
 
   async function saveCrop(cropKey, cropData) {
-    const record = { id: cropKey, ...cropData };
+    const record = stamp({ id: cropKey, ...cropData });
     await put('crops', record);
     await queueSync('put', 'crops', record);
   }
 
-  // --- Bulk load (from Sheets on initial sync) ---
+  // --- Bulk load (old — clears store first. Kept for backward compat) ---
 
   async function bulkLoad(storeName, records) {
     await clear(storeName);
     if (records.length) await putMany(storeName, records);
   }
 
-  // --- Migration from old storage ---
+  // --- Merge load (SAFE PULL) ---
+  // Upserts records WITHOUT clearing the store.
+  // IDs in protectIds are skipped (they have unsynced local changes).
+
+  async function mergeLoad(storeName, records, options) {
+    const protectIds = (options && options.protectIds) ? options.protectIds : new Set();
+
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeName, 'readwrite');
+      const store = tx.objectStore(storeName);
+
+      (records || []).forEach(r => {
+        if (!r || !r.id) return;
+        if (protectIds.has(String(r.id))) return;
+        store.put(r);
+      });
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  // --- Migration from old storage (window.storage artifact format) ---
 
   async function migrateFromWindowStorage() {
     try {
-      // Check if old data exists in window.storage (artifact storage)
       const old = await window.storage.get('rod-farm-v2');
       if (!old || !old.value) return false;
 
       const data = JSON.parse(old.value);
       console.log('Migrating from old storage...');
 
-      // Migrate beds
       if (data.beds) {
         for (const [id, bedData] of Object.entries(data.beds)) {
-          await put('beds', { id, ...bedData });
+          await put('beds', stamp({ id, ...bedData }));
         }
       }
-
-      // Migrate sales
-      if (data.sales) await putMany('sales', data.sales);
-
-      // Migrate credit payments
-      if (data.creditPayments) await putMany('creditPayments', data.creditPayments);
-
-      // Migrate expenses
-      if (data.expenses) await putMany('expenses', data.expenses);
-
-      // Migrate activities
-      if (data.activities) await putMany('activities', data.activities);
-
-      // Migrate harvests
-      if (data.harvests) await putMany('harvests', data.harvests);
-
-      // Migrate custom crops
+      if (data.sales) await putMany('sales', data.sales.map(s => stamp({...s})));
+      if (data.creditPayments) await putMany('creditPayments', data.creditPayments.map(s => stamp({...s})));
+      if (data.expenses) await putMany('expenses', data.expenses.map(s => stamp({...s})));
+      if (data.activities) await putMany('activities', data.activities.map(s => stamp({...s})));
+      if (data.harvests) await putMany('harvests', data.harvests.map(s => stamp({...s})));
       if (data.crops) {
         for (const [key, cropData] of Object.entries(data.crops)) {
-          await put('crops', { id: key, ...cropData });
+          await put('crops', stamp({ id: key, ...cropData }));
         }
       }
 
       await setMeta('migrated', true);
-      console.log('Migration complete');
       return true;
     } catch (e) {
       console.log('No old data to migrate or migration failed:', e);
@@ -252,7 +256,7 @@ const DB = (() => {
     setMeta, getMeta,
     saveBed, saveSale, deleteSale, saveHarvest,
     saveExpense, deleteExpense, saveActivity, deleteActivity,
-    saveCreditPayment, saveCrop, bulkLoad,
+    saveCreditPayment, saveCrop, bulkLoad, mergeLoad,
     migrateFromWindowStorage
   };
 })();
