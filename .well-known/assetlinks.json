@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.parsleysfarm.app",
+    "sha256_cert_fingerprints": ["F8:BB:69:84:87:04:28:67:B8:8B:93:EC:F2:19:D9:EE:F8:F7:EF:B3:7A:BE:40:46:A5:44:50:0B:07:E5:F3:2D"]
+  }
+}]
