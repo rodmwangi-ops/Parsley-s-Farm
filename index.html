@@ -883,6 +883,11 @@
   </div>
 </div>
 
+<!-- Firebase SDK (compat mode for non-module script tags) -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
 <script src="js/config.js"></script>
 <script src="js/db.js"></script>
 <script src="js/auth.js"></script>
@@ -1007,11 +1012,11 @@ let harvests=[];
 let _dbReady=false;
 let _offlineMode=false;
 
-// --- Load from IndexedDB (primary) with fallback to window.storage ---
+// --- Load from Firestore ---
 async function load(){
   try {
     if(_dbReady){
-      // Load from IndexedDB
+      // Load from Firestore (reads local cache when offline)
       const dbBeds=await DB.getAll('beds');
       if(dbBeds.length){dbBeds.forEach(d=>{const b=beds.find(x=>x.id===d.id);if(b)Object.assign(b,d)})}
       const dbCrops=await DB.getAll('crops');
@@ -1022,25 +1027,15 @@ async function load(){
       activities=await DB.getAll('activities');
       harvests=await DB.getAll('harvests');
       sS('<span class="ok">✓ Data loaded</span>');
-    } else {
-      // Fallback: try window.storage (artifact mode)
-      try{const r=await window.storage.get(SK);if(r&&r.value){const d=JSON.parse(r.value);
-        if(d.beds)beds.forEach(b=>{if(d.beds[b.id]){const s=d.beds[b.id];Object.assign(b,s)}});
-        if(d.crops){for(const[k,v]of Object.entries(d.crops))if(!CROPS[k])CROPS[k]=v}
-        if(d.sales)sales=d.sales;if(d.creditPayments)creditPayments=d.creditPayments;
-        if(d.expenses)expenses=d.expenses;if(d.activities)activities=d.activities;
-        if(d.harvests)harvests=d.harvests;
-        sS('<span class="ok">✓ Data loaded (local)</span>');
-      }}catch(e){}
     }
   }catch(e){console.log('Load error:',e)}
 }
 
-// --- Save to IndexedDB + queue sync ---
+// --- Save to Firestore ---
 async function save(){
   try {
     if(_dbReady){
-      // Save modified beds to IndexedDB
+      // Save modified beds to Firestore
       for(const b of beds){
         if(b.crop!=='none'||b.plantingDate||b.dripLines||b.notes){
           await DB.saveBed({id:b.id,block:b.block,sub:b.sub,num:b.num,farm:b.farm,crop:b.crop,plantingDate:b.plantingDate,dripLines:b.dripLines,notes:b.notes});
@@ -1053,14 +1048,6 @@ async function save(){
         }
       }
       sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
-      // Trigger sync push if online
-      if(navigator.onLine && Auth.isSignedIn()) Sync.pushChanges();
-    } else {
-      // Fallback: window.storage
-      const bd={},cr={};
-      beds.forEach(b=>{if(b.crop!=='none'||b.plantingDate||b.dripLines||b.notes){bd[b.id]={crop:b.crop,plantingDate:b.plantingDate,dripLines:b.dripLines,notes:b.notes}}});
-      for(const[k,v]of Object.entries(CROPS))if(!['none','onion_seedbed','onions','spinach','old_spinach','kale','nightshade','sweet_potatoes','sk_seedbed','okra_seedbed','cowpeas','cassava','spider_plant','coriander','capsicum','tomatoes','beans','maize','watermelon','uncultivated'].includes(k))cr[k]=v;
-      try{await window.storage.set(SK,JSON.stringify({beds:bd,crops:cr,sales,creditPayments,expenses,activities,harvests}));sS('<span class="ok">✓ Saved / Imehifadhiwa</span>')}catch(e){sS('Save failed')}
     }
   }catch(e){console.error('Save error:',e);sS('Save failed')}
 }
@@ -1722,6 +1709,7 @@ async function saveSale(){
     const idx=sales.findIndex(s=>s.id===_editingSaleId);
     if(idx>=0){
       sales[idx]={...sales[idx],date,crop,qty,unit:_saleUnit,pricePerUnit:price,total,buyer:buyer||null,payment:_salePay,farm:_saleFarm,recordedBy:_saleHand};
+      if(_dbReady) await DB.saveSale(sales[idx]);
     }
     closeSaleModal();
     renderSales();
@@ -1738,6 +1726,7 @@ async function saveSale(){
       harvestId:hvLink,fromHarvest:hvLink,createdAt:Date.now()
     };
     sales.push(sale);
+    if(_dbReady) await DB.saveSale(sale);
     delete document.getElementById('saleModal').dataset.fromHarvest;
     closeSaleModal();
     renderSales();
@@ -1748,6 +1737,7 @@ async function saveSale(){
 
 async function deleteSale(id){
   if(!confirm('Delete this sale? / Futa mauzo haya?'))return;
+  if(_dbReady) await DB.deleteSale(id);
   sales=sales.filter(s=>s.id!==id);
   renderSales();
   await save();
@@ -1783,6 +1773,7 @@ async function recordPayment(){
     date:todayStr(),
     createdAt:Date.now()
   });
+  if(_dbReady) await DB.saveCreditPayment(creditPayments[creditPayments.length-1]);
   closePayModal();
   renderSales();
   await save();
@@ -2069,6 +2060,7 @@ async function saveActivity(){
     const idx=activities.findIndex(a=>a.id===_editingActId);
     if(idx>=0){
       activities[idx]={...activities[idx],date,type:_actType,beds:_actType==='other'?[]:[..._actSelBeds],recordedBy:_actHand,product:_actType==='spray'?product:'',rate:_actType==='spray'?rate:'',details};
+      if(_dbReady) await DB.saveActivity(activities[idx]);
     }
     closeActModal();
     renderShughuli();
@@ -2087,6 +2079,7 @@ async function saveActivity(){
     };
 
     activities.push(activity);
+    if(_dbReady) await DB.saveActivity(activity);
     closeActModal();
     renderShughuli();
     await save();
@@ -2096,6 +2089,7 @@ async function saveActivity(){
 
 async function deleteActivity(id){
   if(!confirm('Delete this activity? / Futa shughuli hii?'))return;
+  if(_dbReady) await DB.deleteActivity(id);
   activities=activities.filter(a=>a.id!==id);
   renderShughuli();
   await save();
@@ -2202,6 +2196,7 @@ async function saveExpense(){
     id:'exp_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
     date,category:_expCat,amount,note,createdAt:Date.now()
   });
+  if(_dbReady) await DB.saveExpense(expenses[expenses.length-1]);
   closeExpModal();
   renderExpenses();
   await save();
@@ -2210,6 +2205,7 @@ async function saveExpense(){
 
 async function deleteExpense(id){
   if(!confirm('Delete this expense? / Futa matumizi haya?'))return;
+  if(_dbReady) await DB.deleteExpense(id);
   expenses=expenses.filter(e=>e.id!==id);
   renderExpenses();
   await save();
@@ -2356,6 +2352,7 @@ async function saveHarvest(){
   };
 
   harvests.push(harvest);
+  if(_dbReady) await DB.saveHarvest(harvest);
   closeHvModal();
   await save();
 
@@ -2557,21 +2554,16 @@ function onAuthStateChanged(user, tokenReady){
     }
 
     if(tokenReady){
-      // Token is ready — do full sync
-      updateSyncUI('syncing','Connecting...');
-      Sync.initializeSheet().then(()=>{
-        return Sync.fullSync();
-      }).then(()=>{
-        // Reload data from IndexedDB after sync
-        load().then(()=>{
-          renderMap();renderBeds();renderList();updatePanel();
-          if(currentTab==='sales')renderSales();
-        });
+      // Firestore syncs automatically — just load and render
+      updateSyncUI('syncing','Loading...');
+      load().then(()=>{
+        renderMap();renderBeds();renderList();updatePanel();
+        if(currentTab==='sales')renderSales();
+        updateSyncUI('ok','Connected ✓');
       }).catch(e=>{
-        console.error('Initial sync failed:',e);
-        updateSyncUI('error','Sync failed');
+        console.error('Load after auth failed:',e);
+        updateSyncUI('error','Load failed');
       });
-      Sync.startAutoSync();
     }
   } else {
     // User signed out
@@ -2596,8 +2588,6 @@ async function manualSync(){
   if(!navigator.onLine){sS('No internet / Hakuna mtandao');return}
   updateSyncUI('syncing','Syncing...');
   try{
-    await Sync.pushChanges();
-    await Sync.pullAll();
     await load();
     renderMap();renderBeds();renderList();updatePanel();
     if(currentTab==='sales')renderSales();
@@ -2618,56 +2608,46 @@ function enterOffline(){
 
 // INIT
 async function init(){
-  // 1. Open IndexedDB
+  // 1. Initialize Firestore (enables offline persistence)
   try{
     await DB.open();
     _dbReady=true;
-
-    // 2. Try migrating old data from window.storage
-    const migrated=await DB.getMeta('migrated');
-    if(!migrated){
-      try{await DB.migrateFromWindowStorage()}catch(e){console.log('Migration skipped')}
-    }
   }catch(e){
-    console.log('IndexedDB not available, using fallback storage');
+    console.error('Firestore init failed:', e);
     _dbReady=false;
   }
 
-  // 3. Load data (from IndexedDB or fallback)
+  // 2. Load data from Firestore (local cache if offline)
   await load();
 
-  // 4. Render the map + UI
+  // 3. Render the map + UI
   renderMap();renderList();updatePanel();setView('A');
 
-  // 5. Initialize auth
+  // 4. Initialize auth (Firebase Auth)
   Auth.init(onAuthStateChanged);
 
-  // 6. Initialize sync
+  // 5. Initialize sync (stub — Firestore syncs automatically)
   Sync.init(updateSyncUI);
 
-  // 7. Show offline button if no internet
+  // 6. Online/offline status
   if(!navigator.onLine){
     const offBtn=document.getElementById('offlineBtn');
     if(offBtn)offBtn.style.display='block';
   }
   window.addEventListener('online',()=>{
     document.getElementById('offlineBtn').style.display='none';
-    updateSyncUI('idle','Online');
+    updateSyncUI('ok','Online');
   });
   window.addEventListener('offline',()=>{
     document.getElementById('offlineBtn').style.display='block';
     updateSyncUI('offline','Offline');
   });
 
-  // 8. Register service worker
+  // 7. Register service worker
   if('serviceWorker' in navigator){
     try{
       await navigator.serviceWorker.register('sw.js');
       console.log('Service worker registered');
-      // Listen for sync messages from SW
-      navigator.serviceWorker.addEventListener('message',e=>{
-        if(e.data&&e.data.type==='SYNC_REQUESTED')Sync.pushChanges();
-      });
     }catch(e){console.log('SW registration failed:',e)}
   }
 }
