@@ -3,7 +3,7 @@
 // Offline-first caching strategy
 // ============================================================
 
-const CACHE_NAME = 'parsleys-farm-v3.1';
+const CACHE_NAME = 'parsleys-farm-v3.2';
 const ASSETS = [
   './',
   './index.html',
@@ -17,18 +17,12 @@ const ASSETS = [
   './icons/icon-512.svg'
 ];
 
-// External resources to cache
-const EXTERNAL = [
-  'https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap'
-];
-
 // Install: cache all assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(ASSETS).catch(err => {
         console.log('Some assets failed to cache:', err);
-        // Cache what we can
         return Promise.allSettled(ASSETS.map(url => cache.add(url)));
       });
     })
@@ -85,7 +79,6 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       }).catch(() => {
-        // Offline and not cached — return offline page
         if (event.request.destination === 'document') {
           return caches.match('./index.html');
         }
@@ -94,11 +87,10 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Background sync (when browser supports it)
+// Background sync
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-farm-data') {
     event.waitUntil(
-      // Notify the client to push changes
       self.clients.matchAll().then(clients => {
         clients.forEach(client => client.postMessage({ type: 'SYNC_REQUESTED' }));
       })
