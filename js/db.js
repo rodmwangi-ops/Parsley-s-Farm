@@ -1,97 +1,65 @@
 // ============================================================
-// PARSLEY'S FARM — IndexedDB Local Database
-// Offline-first: all data read/written here, synced to Sheets
+// PARSLEY'S FARM — Database (Cloud Firestore)
+// Offline-first: Firestore handles local cache + cloud sync
 // ============================================================
 
 const DB = (() => {
-  const DB_NAME = 'ParsleysFarm';
-  const DB_VERSION = 2;
   let db = null;
 
-  const STORES = ['beds', 'sales', 'harvests', 'expenses', 'activities', 'creditPayments', 'crops', 'syncQueue', 'meta'];
+  // Initialize Firestore with offline persistence
+  async function open() {
+    firebase.initializeApp(CONFIG.FIREBASE);
 
-  function open() {
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, DB_VERSION);
+    db = firebase.firestore();
 
-      req.onupgradeneeded = (e) => {
-        const db = e.target.result;
-        STORES.forEach(name => {
-          if (!db.objectStoreNames.contains(name)) {
-            if (name === 'syncQueue') {
-              db.createObjectStore(name, { keyPath: 'queueId', autoIncrement: true });
-            } else if (name === 'meta') {
-              db.createObjectStore(name, { keyPath: 'key' });
-            } else {
-              db.createObjectStore(name, { keyPath: 'id' });
-            }
-          }
-        });
-      };
+    // Enable offline persistence (data available without internet)
+    try {
+      await db.enablePersistence({ synchronizeTabs: true });
+      console.log('Firestore offline persistence enabled');
+    } catch (err) {
+      if (err.code === 'failed-precondition') {
+        // Multiple tabs open — persistence can only be enabled in one tab at a time
+        console.warn('Firestore persistence: multiple tabs open, only one can use offline cache');
+      } else if (err.code === 'unimplemented') {
+        // Browser doesn't support persistence
+        console.warn('Firestore persistence not supported in this browser');
+      }
+    }
 
-      req.onsuccess = (e) => { db = e.target.result; resolve(db); };
-      req.onerror = (e) => reject(e.target.error);
-    });
+    return db;
   }
 
-  // --- Generic CRUD ---
+  // --- Generic helpers ---
 
-  function put(storeName, record) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, 'readwrite');
-      tx.objectStore(storeName).put(record);
-      tx.oncomplete = () => resolve(record);
-      tx.onerror = (e) => reject(e.target.error);
-    });
+  function collection(name) {
+    return db.collection(name);
   }
 
-  function get(storeName, key) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, 'readonly');
-      const req = tx.objectStore(storeName).get(key);
-      req.onsuccess = () => resolve(req.result || null);
-      req.onerror = (e) => reject(e.target.error);
-    });
+  async function getAll(collectionName) {
+    const snapshot = await collection(collectionName).get();
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   }
 
-  function getAll(storeName) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, 'readonly');
-      const req = tx.objectStore(storeName).getAll();
-      req.onsuccess = () => resolve(req.result || []);
-      req.onerror = (e) => reject(e.target.error);
-    });
+  async function getDoc(collectionName, id) {
+    const doc = await collection(collectionName).doc(id).get();
+    return doc.exists ? { id: doc.id, ...doc.data() } : null;
   }
 
-  function remove(storeName, key) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, 'readwrite');
-      tx.objectStore(storeName).delete(key);
-      tx.oncomplete = () => resolve();
-      tx.onerror = (e) => reject(e.target.error);
-    });
+  async function putDoc(collectionName, record) {
+    if (!record || !record.id) throw new Error('Record must have an id');
+    const id = record.id;
+    const data = { ...record };
+    // Firestore uses the doc ID, not a field — but we keep id in the data too for compatibility
+    await collection(collectionName).doc(id).set(data, { merge: true });
+    return record;
   }
 
-  function clear(storeName) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, 'readwrite');
-      tx.objectStore(storeName).clear();
-      tx.oncomplete = () => resolve();
-      tx.onerror = (e) => reject(e.target.error);
-    });
-  }
-
-  function putMany(storeName, records) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, 'readwrite');
-      const store = tx.objectStore(storeName);
-      records.forEach(r => store.put(r));
-      tx.oncomplete = () => resolve();
-      tx.onerror = (e) => reject(e.target.error);
-    });
+  async function removeDoc(collectionName, id) {
+    await collection(collectionName).doc(id).delete();
   }
 
   // --- Timestamp helper ---
+
   function stamp(record) {
     if (!record || typeof record !== 'object') return record;
     const now = Date.now();
@@ -100,149 +68,110 @@ const DB = (() => {
     return record;
   }
 
-  // --- Sync Queue ---
-
-  function queueSync(action, storeName, record) {
-    return put('syncQueue', {
-      action,
-      store: storeName,
-      recordId: record.id || record.key,
-      data: record,
-      timestamp: Date.now(),
-      status: 'pending'
-    });
-  }
-
-  function getSyncQueue() { return getAll('syncQueue'); }
-  function clearSyncQueue() { return clear('syncQueue'); }
-  function removeSyncItem(queueId) { return remove('syncQueue', queueId); }
-
   // --- Meta ---
 
-  function setMeta(key, value) {
-    return put('meta', { key, value, updatedAt: Date.now() });
+  async function setMeta(key, value) {
+    await collection('meta').doc(key).set({ key, value, updatedAt: Date.now() });
   }
 
   async function getMeta(key) {
-    const result = await get('meta', key);
-    return result ? result.value : null;
+    const doc = await collection('meta').doc(key).get();
+    return doc.exists ? doc.data().value : null;
   }
 
-  // --- High-level data operations (with timestamps + sync queue) ---
+  // --- High-level save operations ---
 
   async function saveBed(bed) {
     stamp(bed);
-    await put('beds', bed);
-    await queueSync('put', 'beds', bed);
+    await putDoc('beds', bed);
   }
 
   async function saveSale(sale) {
     stamp(sale);
-    await put('sales', sale);
-    await queueSync('put', 'sales', sale);
+    await putDoc('sales', sale);
   }
 
   async function deleteSale(id) {
-    await remove('sales', id);
-    await queueSync('delete', 'sales', { id });
+    await removeDoc('sales', id);
   }
 
   async function saveHarvest(harvest) {
     stamp(harvest);
-    await put('harvests', harvest);
-    await queueSync('put', 'harvests', harvest);
+    await putDoc('harvests', harvest);
+  }
+
+  async function deleteHarvest(id) {
+    await removeDoc('harvests', id);
   }
 
   async function saveExpense(expense) {
     stamp(expense);
-    await put('expenses', expense);
-    await queueSync('put', 'expenses', expense);
+    await putDoc('expenses', expense);
   }
 
   async function deleteExpense(id) {
-    await remove('expenses', id);
-    await queueSync('delete', 'expenses', { id });
+    await removeDoc('expenses', id);
   }
 
   async function saveActivity(activity) {
     stamp(activity);
-    await put('activities', activity);
-    await queueSync('put', 'activities', activity);
+    await putDoc('activities', activity);
   }
 
   async function deleteActivity(id) {
-    await remove('activities', id);
-    await queueSync('delete', 'activities', { id });
+    await removeDoc('activities', id);
   }
 
   async function saveCreditPayment(payment) {
     stamp(payment);
-    await put('creditPayments', payment);
-    await queueSync('put', 'creditPayments', payment);
+    await putDoc('creditPayments', payment);
   }
 
+  // Same signature as before: saveCrop(cropKey, cropData)
   async function saveCrop(cropKey, cropData) {
     const record = stamp({ id: cropKey, ...cropData });
-    await put('crops', record);
-    await queueSync('put', 'crops', record);
+    await putDoc('crops', record);
   }
 
-  // --- Bulk load (old — clears store first. Kept for backward compat) ---
-
-  async function bulkLoad(storeName, records) {
-    await clear(storeName);
-    if (records.length) await putMany(storeName, records);
-  }
-
-  // --- Merge load (SAFE PULL) ---
-  // Upserts records WITHOUT clearing the store.
-  // IDs in protectIds are skipped (they have unsynced local changes).
-
-  async function mergeLoad(storeName, records, options) {
-    const protectIds = (options && options.protectIds) ? options.protectIds : new Set();
-
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, 'readwrite');
-      const store = tx.objectStore(storeName);
-
-      (records || []).forEach(r => {
-        if (!r || !r.id) return;
-        if (protectIds.has(String(r.id))) return;
-        store.put(r);
-      });
-
-      tx.oncomplete = () => resolve();
-      tx.onerror = (e) => reject(e.target.error);
-    });
-  }
-
-  // --- Migration from old storage (window.storage artifact format) ---
+  // --- Migration from old storage (backward compat — returns false on GitHub Pages) ---
 
   async function migrateFromWindowStorage() {
     try {
+      if (!window.storage || typeof window.storage.get !== 'function') return false;
       const old = await window.storage.get('rod-farm-v2');
       if (!old || !old.value) return false;
 
       const data = JSON.parse(old.value);
-      console.log('Migrating from old storage...');
+      console.log('Migrating from old storage to Firestore...');
 
       if (data.beds) {
         for (const [id, bedData] of Object.entries(data.beds)) {
-          await put('beds', stamp({ id, ...bedData }));
+          await putDoc('beds', stamp({ id, ...bedData }));
         }
       }
-      if (data.sales) await putMany('sales', data.sales.map(s => stamp({...s})));
-      if (data.creditPayments) await putMany('creditPayments', data.creditPayments.map(s => stamp({...s})));
-      if (data.expenses) await putMany('expenses', data.expenses.map(s => stamp({...s})));
-      if (data.activities) await putMany('activities', data.activities.map(s => stamp({...s})));
-      if (data.harvests) await putMany('harvests', data.harvests.map(s => stamp({...s})));
+      if (data.sales) {
+        for (const s of data.sales) { await putDoc('sales', stamp({ ...s })); }
+      }
+      if (data.creditPayments) {
+        for (const p of data.creditPayments) { await putDoc('creditPayments', stamp({ ...p })); }
+      }
+      if (data.expenses) {
+        for (const e of data.expenses) { await putDoc('expenses', stamp({ ...e })); }
+      }
+      if (data.activities) {
+        for (const a of data.activities) { await putDoc('activities', stamp({ ...a })); }
+      }
+      if (data.harvests) {
+        for (const h of data.harvests) { await putDoc('harvests', stamp({ ...h })); }
+      }
       if (data.crops) {
         for (const [key, cropData] of Object.entries(data.crops)) {
-          await put('crops', stamp({ id: key, ...cropData }));
+          await putDoc('crops', stamp({ id: key, ...cropData }));
         }
       }
 
       await setMeta('migrated', true);
+      console.log('Migration to Firestore complete');
       return true;
     } catch (e) {
       console.log('No old data to migrate or migration failed:', e);
@@ -251,12 +180,13 @@ const DB = (() => {
   }
 
   return {
-    open, put, get, getAll, remove, clear, putMany,
-    queueSync, getSyncQueue, clearSyncQueue, removeSyncItem,
+    open, getAll, getDoc,
     setMeta, getMeta,
-    saveBed, saveSale, deleteSale, saveHarvest,
-    saveExpense, deleteExpense, saveActivity, deleteActivity,
-    saveCreditPayment, saveCrop, bulkLoad, mergeLoad,
+    saveBed, saveSale, deleteSale,
+    saveHarvest, deleteHarvest,
+    saveExpense, deleteExpense,
+    saveActivity, deleteActivity,
+    saveCreditPayment, saveCrop,
     migrateFromWindowStorage
   };
 })();
