@@ -1,9 +1,9 @@
 // ============================================================
 // PARSLEY'S FARM — Service Worker
-// Offline-first caching strategy
+// Offline-first caching strategy (Firestore edition)
 // ============================================================
 
-const CACHE_NAME = 'parsleys-farm-v3.2';
+const CACHE_NAME = 'parsleys-farm-v4.0';
 const ASSETS = [
   './',
   './index.html',
@@ -42,12 +42,17 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: cache-first for app assets, network-first for API calls
+// Fetch: cache-first for app assets, network-first for Firebase/Google
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Google APIs — always network (auth, sheets)
-  if (url.hostname.includes('googleapis.com') || url.hostname.includes('google.com') || url.hostname.includes('gstatic.com')) {
+  // Firebase & Google APIs — always network (auth, firestore, CDN)
+  if (url.hostname.includes('googleapis.com') ||
+      url.hostname.includes('google.com') ||
+      url.hostname.includes('gstatic.com') ||
+      url.hostname.includes('firebaseio.com') ||
+      url.hostname.includes('firestore.googleapis.com') ||
+      url.hostname.includes('firebasestorage.app')) {
     event.respondWith(
       fetch(event.request).catch(() => {
         return new Response(JSON.stringify({ error: 'offline' }), {
@@ -85,15 +90,4 @@ self.addEventListener('fetch', (event) => {
       });
     })
   );
-});
-
-// Background sync
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-farm-data') {
-    event.waitUntil(
-      self.clients.matchAll().then(clients => {
-        clients.forEach(client => client.postMessage({ type: 'SYNC_REQUESTED' }));
-      })
-    );
-  }
 });
