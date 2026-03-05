@@ -3,7 +3,9 @@
 // Offline-first caching strategy (Firestore edition)
 // ============================================================
 
-const CACHE_NAME = 'parsleys-farm-v4.0';
+const CACHE_NAME = 'parsleys-farm-v4.1';
+
+// Pre-cache: app assets + Firebase SDK (versioned, never change)
 const ASSETS = [
   './',
   './index.html',
@@ -14,7 +16,11 @@ const ASSETS = [
   './js/app.js',
   './manifest.json',
   './icons/icon-192.svg',
-  './icons/icon-512.svg'
+  './icons/icon-512.svg',
+  // Firebase SDK — versioned static files, safe to cache permanently
+  'https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js',
+  'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js'
 ];
 
 // Install: cache all assets
@@ -42,17 +48,17 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: cache-first for app assets, network-first for Firebase/Google
+// Fetch handler
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Firebase & Google APIs — always network (auth, firestore, CDN)
+  // --- Network-first: Firebase/Google dynamic API calls only ---
+  // Auth endpoints, Firestore data sync, token refresh.
+  // Does NOT include gstatic.com (static SDK/font files — those get cached).
   if (url.hostname.includes('googleapis.com') ||
-      url.hostname.includes('google.com') ||
-      url.hostname.includes('gstatic.com') ||
       url.hostname.includes('firebaseio.com') ||
-      url.hostname.includes('firestore.googleapis.com') ||
-      url.hostname.includes('firebasestorage.app')) {
+      url.hostname.includes('firebasestorage.app') ||
+      (url.hostname.includes('google.com') && !url.hostname.includes('gstatic'))) {
     event.respondWith(
       fetch(event.request).catch(() => {
         return new Response(JSON.stringify({ error: 'offline' }), {
@@ -63,11 +69,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // App assets — cache first, network fallback
+  // --- Cache-first: app files, Firebase SDK, Google Fonts, everything else ---
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) {
-        // Return cached, but also update cache in background
+        // Serve from cache, update in background
         fetch(event.request).then(response => {
           if (response && response.status === 200) {
             caches.open(CACHE_NAME).then(cache => cache.put(event.request, response));
@@ -76,7 +82,7 @@ self.addEventListener('fetch', (event) => {
         return cached;
       }
 
-      // Not cached — fetch from network
+      // Not cached — fetch from network, then cache
       return fetch(event.request).then(response => {
         if (response && response.status === 200) {
           const clone = response.clone();
