@@ -5,24 +5,26 @@
 
 const DB = (() => {
   let db = null;
+  let _persistenceOk = false;
 
   // Initialize Firestore with offline persistence
   async function open() {
     firebase.initializeApp(CONFIG.FIREBASE);
-
     db = firebase.firestore();
 
     // Enable offline persistence (data available without internet)
     try {
       await db.enablePersistence({ synchronizeTabs: true });
+      _persistenceOk = true;
       console.log('Firestore offline persistence enabled');
     } catch (err) {
+      _persistenceOk = false;
       if (err.code === 'failed-precondition') {
-        // Multiple tabs open — persistence can only be enabled in one tab at a time
-        console.warn('Firestore persistence: multiple tabs open, only one can use offline cache');
+        console.warn('Persistence: multiple tabs, only one gets offline cache');
       } else if (err.code === 'unimplemented') {
-        // Browser doesn't support persistence
-        console.warn('Firestore persistence not supported in this browser');
+        console.warn('Persistence: not supported in this browser');
+      } else {
+        console.warn('Persistence failed:', err);
       }
     }
 
@@ -35,21 +37,40 @@ const DB = (() => {
     return db.collection(name);
   }
 
+  // Read all docs — tries default, falls back to cache if offline/error
   async function getAll(collectionName) {
-    const snapshot = await collection(collectionName).get();
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    try {
+      const snapshot = await collection(collectionName).get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (err) {
+      console.warn(`getAll(${collectionName}) server failed, trying cache:`, err.message);
+      try {
+        const snapshot = await collection(collectionName).get({ source: 'cache' });
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (cacheErr) {
+        console.warn(`getAll(${collectionName}) cache empty:`, cacheErr.message);
+        return [];
+      }
+    }
   }
 
   async function getDoc(collectionName, id) {
-    const doc = await collection(collectionName).doc(id).get();
-    return doc.exists ? { id: doc.id, ...doc.data() } : null;
+    try {
+      const doc = await collection(collectionName).doc(id).get();
+      return doc.exists ? { id: doc.id, ...doc.data() } : null;
+    } catch (err) {
+      try {
+        const doc = await collection(collectionName).doc(id).get({ source: 'cache' });
+        return doc.exists ? { id: doc.id, ...doc.data() } : null;
+      } catch (e) { return null; }
+    }
   }
 
+  // Write a doc — works offline when persistence is enabled (queues locally)
   async function putDoc(collectionName, record) {
     if (!record || !record.id) throw new Error('Record must have an id');
     const id = record.id;
     const data = { ...record };
-    // Firestore uses the doc ID, not a field — but we keep id in the data too for compatibility
     await collection(collectionName).doc(id).set(data, { merge: true });
     return record;
   }
@@ -71,69 +92,80 @@ const DB = (() => {
   // --- Meta ---
 
   async function setMeta(key, value) {
-    await collection('meta').doc(key).set({ key, value, updatedAt: Date.now() });
+    try {
+      await collection('meta').doc(key).set({ key, value, updatedAt: Date.now() });
+    } catch (e) { console.error('setMeta failed:', e); }
   }
 
   async function getMeta(key) {
-    const doc = await collection('meta').doc(key).get();
-    return doc.exists ? doc.data().value : null;
+    const result = await getDoc('meta', key);
+    return result ? result.value : null;
   }
 
   // --- High-level save operations ---
+  // Each catches errors internally — never throws, logs to console
 
   async function saveBed(bed) {
-    stamp(bed);
-    await putDoc('beds', bed);
+    try { stamp(bed); await putDoc('beds', bed); return bed; }
+    catch (e) { console.error('saveBed failed:', e); return null; }
   }
 
   async function saveSale(sale) {
-    stamp(sale);
-    await putDoc('sales', sale);
+    try { stamp(sale); await putDoc('sales', sale); return sale; }
+    catch (e) { console.error('saveSale failed:', e); return null; }
   }
 
   async function deleteSale(id) {
-    await removeDoc('sales', id);
+    try { await removeDoc('sales', id); }
+    catch (e) { console.error('deleteSale failed:', e); }
   }
 
   async function saveHarvest(harvest) {
-    stamp(harvest);
-    await putDoc('harvests', harvest);
+    try { stamp(harvest); await putDoc('harvests', harvest); return harvest; }
+    catch (e) { console.error('saveHarvest failed:', e); return null; }
   }
 
   async function deleteHarvest(id) {
-    await removeDoc('harvests', id);
+    try { await removeDoc('harvests', id); }
+    catch (e) { console.error('deleteHarvest failed:', e); }
   }
 
   async function saveExpense(expense) {
-    stamp(expense);
-    await putDoc('expenses', expense);
+    try { stamp(expense); await putDoc('expenses', expense); return expense; }
+    catch (e) { console.error('saveExpense failed:', e); return null; }
   }
 
   async function deleteExpense(id) {
-    await removeDoc('expenses', id);
+    try { await removeDoc('expenses', id); }
+    catch (e) { console.error('deleteExpense failed:', e); }
   }
 
   async function saveActivity(activity) {
-    stamp(activity);
-    await putDoc('activities', activity);
+    try { stamp(activity); await putDoc('activities', activity); return activity; }
+    catch (e) { console.error('saveActivity failed:', e); return null; }
   }
 
   async function deleteActivity(id) {
-    await removeDoc('activities', id);
+    try { await removeDoc('activities', id); }
+    catch (e) { console.error('deleteActivity failed:', e); }
   }
 
   async function saveCreditPayment(payment) {
-    stamp(payment);
-    await putDoc('creditPayments', payment);
+    try { stamp(payment); await putDoc('creditPayments', payment); return payment; }
+    catch (e) { console.error('saveCreditPayment failed:', e); return null; }
   }
 
-  // Same signature as before: saveCrop(cropKey, cropData)
   async function saveCrop(cropKey, cropData) {
-    const record = stamp({ id: cropKey, ...cropData });
-    await putDoc('crops', record);
+    try {
+      const record = stamp({ id: cropKey, ...cropData });
+      await putDoc('crops', record);
+      return record;
+    } catch (e) { console.error('saveCrop failed:', e); return null; }
   }
 
-  // --- Migration from old storage (backward compat — returns false on GitHub Pages) ---
+  function hasPersistence() { return _persistenceOk; }
+
+  // --- Migration from old storage (backward compat) ---
 
   async function migrateFromWindowStorage() {
     try {
@@ -149,21 +181,11 @@ const DB = (() => {
           await putDoc('beds', stamp({ id, ...bedData }));
         }
       }
-      if (data.sales) {
-        for (const s of data.sales) { await putDoc('sales', stamp({ ...s })); }
-      }
-      if (data.creditPayments) {
-        for (const p of data.creditPayments) { await putDoc('creditPayments', stamp({ ...p })); }
-      }
-      if (data.expenses) {
-        for (const e of data.expenses) { await putDoc('expenses', stamp({ ...e })); }
-      }
-      if (data.activities) {
-        for (const a of data.activities) { await putDoc('activities', stamp({ ...a })); }
-      }
-      if (data.harvests) {
-        for (const h of data.harvests) { await putDoc('harvests', stamp({ ...h })); }
-      }
+      if (data.sales) { for (const s of data.sales) { await putDoc('sales', stamp({...s})); } }
+      if (data.creditPayments) { for (const p of data.creditPayments) { await putDoc('creditPayments', stamp({...p})); } }
+      if (data.expenses) { for (const e of data.expenses) { await putDoc('expenses', stamp({...e})); } }
+      if (data.activities) { for (const a of data.activities) { await putDoc('activities', stamp({...a})); } }
+      if (data.harvests) { for (const h of data.harvests) { await putDoc('harvests', stamp({...h})); } }
       if (data.crops) {
         for (const [key, cropData] of Object.entries(data.crops)) {
           await putDoc('crops', stamp({ id: key, ...cropData }));
@@ -171,16 +193,15 @@ const DB = (() => {
       }
 
       await setMeta('migrated', true);
-      console.log('Migration to Firestore complete');
       return true;
     } catch (e) {
-      console.log('No old data to migrate or migration failed:', e);
+      console.log('Migration failed:', e);
       return false;
     }
   }
 
   return {
-    open, getAll, getDoc,
+    open, getAll, getDoc, hasPersistence,
     setMeta, getMeta,
     saveBed, saveSale, deleteSale,
     saveHarvest, deleteHarvest,
