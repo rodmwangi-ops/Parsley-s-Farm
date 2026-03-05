@@ -68,7 +68,9 @@ const Auth = (() => {
   }
 
   function getUser() { return currentUser; }
-  function isSignedIn() { return !!currentUser && !!firebase.auth().currentUser; }
+  // Works offline: currentUser is set from localStorage cache immediately,
+  // then confirmed by firebase.auth().onAuthStateChanged
+  function isSignedIn() { return !!currentUser; }
 
   return { init, signIn, signOut, getUser, isSignedIn, isAdmin };
 })();
