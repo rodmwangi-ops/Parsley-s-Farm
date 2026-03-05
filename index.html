@@ -1055,19 +1055,19 @@ async function save(){
 // --- Save individual record types (used by specific save functions) ---
 async function saveSaleRecord(sale){
   if(_dbReady)await DB.saveSale(sale);
-  await save();
+  sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
 }
 async function saveActivityRecord(act){
   if(_dbReady)await DB.saveActivity(act);
-  await save();
+  sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
 }
 async function saveExpenseRecord(exp){
   if(_dbReady)await DB.saveExpense(exp);
-  await save();
+  sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
 }
 async function saveHarvestRecord(hv){
   if(_dbReady)await DB.saveHarvest(hv);
-  await save();
+  sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
 }
 
 function sS(h){document.getElementById('statusBar').innerHTML=h;if(h.includes('✓'))setTimeout(()=>document.getElementById('statusBar').innerHTML='Bonyeza kitanda kuhariri · Shift+click to multi-select',2500)}
@@ -1713,7 +1713,6 @@ async function saveSale(){
     }
     closeSaleModal();
     renderSales();
-    await save();
     sS(`<span class="ok">✓ Sale updated: KES ${formatKES(total)}</span>`);
   } else {
     // New sale — check for harvest link
@@ -1730,7 +1729,6 @@ async function saveSale(){
     delete document.getElementById('saleModal').dataset.fromHarvest;
     closeSaleModal();
     renderSales();
-    await save();
     sS(`<span class="ok">✓ Sale recorded: KES ${formatKES(total)}</span>`);
   }
 }
@@ -1740,7 +1738,6 @@ async function deleteSale(id){
   if(_dbReady) await DB.deleteSale(id);
   sales=sales.filter(s=>s.id!==id);
   renderSales();
-  await save();
   sS('<span class="ok">✓ Sale deleted</span>');
 }
 
@@ -1776,7 +1773,6 @@ async function recordPayment(){
   if(_dbReady) await DB.saveCreditPayment(creditPayments[creditPayments.length-1]);
   closePayModal();
   renderSales();
-  await save();
   sS(`<span class="ok">✓ Payment recorded: KES ${formatKES(amt)} from ${_payBuyer}</span>`);
 }
 
@@ -2064,7 +2060,6 @@ async function saveActivity(){
     }
     closeActModal();
     renderShughuli();
-    await save();
     sS(`<span class="ok">✓ Activity updated</span>`);
   } else {
     const activity={
@@ -2082,7 +2077,6 @@ async function saveActivity(){
     if(_dbReady) await DB.saveActivity(activity);
     closeActModal();
     renderShughuli();
-    await save();
     sS(`<span class="ok">✓ Activity logged: ${ACT_TYPES[_actType].name}</span>`);
   }
 }
@@ -2092,7 +2086,6 @@ async function deleteActivity(id){
   if(_dbReady) await DB.deleteActivity(id);
   activities=activities.filter(a=>a.id!==id);
   renderShughuli();
-  await save();
   sS('<span class="ok">✓ Activity deleted</span>');
 }
 
@@ -2199,7 +2192,6 @@ async function saveExpense(){
   if(_dbReady) await DB.saveExpense(expenses[expenses.length-1]);
   closeExpModal();
   renderExpenses();
-  await save();
   sS(`<span class="ok">✓ Expense recorded: KES ${formatKES(amount)}</span>`);
 }
 
@@ -2208,7 +2200,6 @@ async function deleteExpense(id){
   if(_dbReady) await DB.deleteExpense(id);
   expenses=expenses.filter(e=>e.id!==id);
   renderExpenses();
-  await save();
   sS('<span class="ok">✓ Expense deleted</span>');
 }
 
@@ -2354,7 +2345,6 @@ async function saveHarvest(){
   harvests.push(harvest);
   if(_dbReady) await DB.saveHarvest(harvest);
   closeHvModal();
-  await save();
 
   if(_hvDest==='sell'){
     // Open sale modal pre-filled
