@@ -110,6 +110,20 @@
   .sale-modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
   .sale-modal h2{font-size:16px;font-weight:800;color:var(--g1);margin-bottom:14px;display:flex;align-items:center;gap:8px}
   .sale-modal .fld{margin-bottom:12px}
+  .sale-line-item{background:#fafaf5;border:1.5px solid var(--border2);border-radius:8px;padding:10px;margin-bottom:8px;position:relative}
+  .sale-line-item .sli-head{display:flex;gap:6px;align-items:center;margin-bottom:6px}
+  .sale-line-item .sli-head select{flex:1;font-size:12px;padding:6px;border:1px solid var(--border);border-radius:4px;font-family:'Outfit'}
+  .sale-line-item .sli-unit{display:flex;gap:0;border:1px solid var(--border);border-radius:4px;overflow:hidden;flex-shrink:0}
+  .sale-line-item .sli-unit-opt{padding:5px 8px;font-size:10px;cursor:pointer;font-family:'Outfit';font-weight:600;background:#fff;color:var(--ink3);border:none}
+  .sale-line-item .sli-unit-opt.act{background:var(--g3);color:var(--g1)}
+  .sale-line-item .sli-nums{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .sale-line-item .sli-nums input{width:100%;font-size:13px;padding:6px;border:1px solid var(--border);border-radius:4px;font-family:'Space Mono',monospace}
+  .sale-line-item .sli-nums label{font-size:9px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px;display:block;font-family:'Space Mono',monospace}
+  .sale-line-item .sli-subtotal{text-align:right;font-size:11px;font-weight:700;color:var(--g1);font-family:'Space Mono',monospace;margin-top:4px}
+  .sale-line-item .sli-remove{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--ink3);font-size:14px;cursor:pointer;padding:2px 4px;line-height:1}
+  .sale-line-item .sli-remove:hover{color:var(--err)}
+  .sale-add-item-btn{width:100%;padding:10px;border:1.5px dashed var(--g2);border-radius:8px;background:none;color:var(--g2);font-family:'Outfit';font-size:12px;font-weight:700;cursor:pointer;margin-bottom:10px}
+  .sale-add-item-btn:hover{background:var(--g3)}
 
   .unit-toggle{display:flex;gap:0;border:1.5px solid var(--border);border-radius:5px;overflow:hidden}
   .unit-opt{flex:1;padding:7px;text-align:center;cursor:pointer;font-family:'Outfit';font-size:12px;font-weight:600;background:#fff;color:var(--ink2);transition:all .12s;border:none}
@@ -638,31 +652,9 @@
       </div>
     </div>
 
-    <div class="fld">
-      <label>Crop / Zao</label>
-      <select id="sCrop">
-        <option value="">— Select crop —</option>
-      </select>
-    </div>
-
-    <div class="fld">
-      <label>Unit / Kipimo</label>
-      <div class="unit-toggle" id="sUnitToggle">
-        <div class="unit-opt act" data-unit="kg" onclick="setUnit('kg',this)">Kg</div>
-        <div class="unit-opt" data-unit="pcs" onclick="setUnit('pcs',this)">Pieces / Vipande</div>
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div class="fld">
-        <label>Quantity / Kiasi <span id="sUnitLabel">(kg)</span></label>
-        <input type="number" id="sQty" placeholder="0" min="0" step="0.5" oninput="calcTotal()">
-      </div>
-      <div class="fld">
-        <label>Price per <span id="sPriceLabel">kg</span> (KES)</label>
-        <input type="number" id="sPrice" placeholder="0" min="0" oninput="calcTotal()">
-      </div>
-    </div>
+    <!-- Line items -->
+    <div id="saleItems"></div>
+    <button class="sale-add-item-btn" onclick="addSaleItem()">+ Add crop / Ongeza zao</button>
 
     <div class="total-display">
       <div class="total-label">Total / Jumla (KES)</div>
@@ -1400,6 +1392,91 @@ let _salePay='cash';
 let _saleFarm='A';
 let _saleHand='Rod';
 let _editingSaleId=null;
+let _saleItemsList=[]; // [{crop,unit,qty,pricePerUnit,harvestId}]
+
+// --- Backward compat: extract items from old or new sale format ---
+function saleItems(s){
+  if(s.items&&s.items.length)return s.items;
+  return[{crop:s.crop,qty:s.qty,unit:s.unit||'kg',pricePerUnit:s.pricePerUnit,total:s.total,harvestId:s.harvestId||s.fromHarvest||null}];
+}
+
+// --- Build crop <option> HTML ---
+function buildCropOptions(selected){
+  let h='<option value="">— Crop / Zao —</option>';
+  for(const[k,v]of Object.entries(CROPS)){
+    if(!v.p)continue;
+    h+=`<option value="${k}"${k===selected?' selected':''}>${v.n}${v.sw?' / '+v.sw:''}</option>`;
+  }
+  return h;
+}
+
+// --- Render a single line item row ---
+function renderSaleItemHTML(idx,item){
+  const isKg=(item.unit||'kg')==='kg';
+  const sub=Math.round((item.qty||0)*(item.pricePerUnit||0));
+  return`<div class="sale-line-item" data-idx="${idx}">
+    ${_saleItemsList.length>1?`<button class="sli-remove" onclick="removeSaleItem(${idx})">✕</button>`:''}
+    <div class="sli-head">
+      <select onchange="updateSaleItem(${idx},'crop',this.value)">${buildCropOptions(item.crop)}</select>
+      <div class="sli-unit">
+        <div class="sli-unit-opt${isKg?' act':''}" onclick="setSaleItemUnit(${idx},'kg',this)">Kg</div>
+        <div class="sli-unit-opt${!isKg?' act':''}" onclick="setSaleItemUnit(${idx},'pcs',this)">Pcs</div>
+      </div>
+    </div>
+    <div class="sli-nums">
+      <div><label>Qty / Kiasi</label><input type="number" value="${item.qty||''}" placeholder="0" min="0" step="0.5" oninput="updateSaleItem(${idx},'qty',this.value)"></div>
+      <div><label>Price/${isKg?'kg':'pc'} (KES)</label><input type="number" value="${item.pricePerUnit||''}" placeholder="0" min="0" oninput="updateSaleItem(${idx},'pricePerUnit',this.value)"></div>
+    </div>
+    <div class="sli-subtotal">${sub?formatKES(sub)+'/=':''}</div>
+  </div>`;
+}
+
+// --- Re-render all line items ---
+function renderAllSaleItems(){
+  const c=document.getElementById('saleItems');
+  if(!c)return;
+  c.innerHTML=_saleItemsList.map((item,i)=>renderSaleItemHTML(i,item)).join('');
+  calcTotal();
+}
+
+// --- Add a line item ---
+function addSaleItem(prefill){
+  _saleItemsList.push(prefill||{crop:'',unit:'kg',qty:null,pricePerUnit:null,harvestId:null});
+  renderAllSaleItems();
+}
+
+// --- Remove a line item ---
+function removeSaleItem(idx){
+  if(_saleItemsList.length<=1)return;
+  _saleItemsList.splice(idx,1);
+  renderAllSaleItems();
+}
+
+// --- Update a field in a line item ---
+function updateSaleItem(idx,field,value){
+  if(!_saleItemsList[idx])return;
+  if(field==='qty'||field==='pricePerUnit')value=parseFloat(value)||0;
+  _saleItemsList[idx][field]=value;
+  // Update subtotal display
+  const row=document.querySelectorAll('.sale-line-item')[idx];
+  if(row){
+    const sub=Math.round((_saleItemsList[idx].qty||0)*(_saleItemsList[idx].pricePerUnit||0));
+    row.querySelector('.sli-subtotal').textContent=sub?formatKES(sub)+'/=':'';
+  }
+  calcTotal();
+}
+
+// --- Set unit for a line item ---
+function setSaleItemUnit(idx,unit,el){
+  if(!_saleItemsList[idx])return;
+  _saleItemsList[idx].unit=unit;
+  const row=el.closest('.sale-line-item');
+  row.querySelectorAll('.sli-unit-opt').forEach(o=>o.classList.toggle('act',o.textContent.toLowerCase()===unit));
+  // Update price label
+  const labels=row.querySelectorAll('.sli-nums label');
+  if(labels[1])labels[1].textContent=`Price/${unit==='kg'?'kg':'pc'} (KES)`;
+  calcTotal();
+}
 let _payBuyer=null;
 let _payMethod='cash';
 let _weekOffset=0;  // 0=current week, -1=last week, etc
@@ -1449,7 +1526,10 @@ function formatMonth(ds){
 function periodSales(startDate,endDate){
   let kes=0,kg=0,count=0;
   sales.forEach(s=>{
-    if(s.date>=startDate&&s.date<=endDate){kes+=s.total;if(s.unit==='kg')kg+=s.qty;count++}
+    if(s.date>=startDate&&s.date<=endDate){
+      kes+=s.total;count++;
+      saleItems(s).forEach(it=>{if(it.unit==='kg')kg+=it.qty});
+    }
   });
   return{kes,kg,count};
 }
@@ -1563,15 +1643,30 @@ function renderSales(){
   } else {
     h+=`<div class="sv-list">`;
     recentSales.forEach(s=>{
-      const ci=CROPS[s.crop]||{c:'#aaa',n:s.crop,sw:''};
-      const unitLabel=s.unit==='pcs'?'pcs':'kg';
+      const items=saleItems(s);
+      const firstCrop=items[0]||{};
+      const ci=CROPS[firstCrop.crop]||{c:'#aaa',n:firstCrop.crop,sw:''};
       const farmLabel=s.farm?(s.farm==='Home'?'Home':s.farm==='Both'?'Farm A+B':`Farm ${s.farm}`):'';
       const handLabel=s.recordedBy||'';
+      // Build item summary
+      let itemSummary;
+      if(items.length===1){
+        const unitLabel=firstCrop.unit==='pcs'?'pcs':'kg';
+        itemSummary=`${formatDate(s.date)} · ${firstCrop.qty}${unitLabel} × ${firstCrop.pricePerUnit}/=`;
+      } else {
+        itemSummary=formatDate(s.date)+' · '+items.map(it=>{
+          const cn=CROPS[it.crop]||{n:it.crop};
+          const ul=it.unit==='pcs'?'pcs':'kg';
+          return`${cn.n} ${it.qty}${ul}`;
+        }).join(' + ');
+      }
+      // Crop name display
+      const cropName=items.length===1?ci.n:items.map(it=>(CROPS[it.crop]||{n:it.crop}).n).join(' + ');
       h+=`<div class="sv-item">`;
       h+=`<div class="sv-item-dot" style="background:${ci.c}"></div>`;
       h+=`<div class="sv-item-info">`;
-      h+=`<div class="sv-item-crop">${ci.n}${s.buyer?' → '+s.buyer:''}</div>`;
-      h+=`<div class="sv-item-meta">${formatDate(s.date)} · ${s.qty}${unitLabel} × ${s.pricePerUnit}/=</div>`;
+      h+=`<div class="sv-item-crop">${cropName}${s.buyer?' → '+s.buyer:''}</div>`;
+      h+=`<div class="sv-item-meta">${itemSummary}</div>`;
       if(farmLabel||handLabel)h+=`<div class="sv-item-who">${[farmLabel,handLabel].filter(Boolean).join(' · ')}</div>`;
       h+=`</div>`;
       h+=`<div class="sv-item-amt"><div class="sv-item-kes">${formatKES(s.total)}/=</div><div class="sv-item-pay${s.payment==='credit'?' credit':''}">${s.payment}</div></div>`;
@@ -1599,28 +1694,23 @@ function openSaleModal(editId){
     if(!s){closeSaleModal();return}
     document.getElementById('saleModalTitle').textContent='✎ Edit Sale / Hariri Mauzo';
     document.getElementById('sDate').value=s.date;
-    document.getElementById('sCrop').value=s.crop;
-    document.getElementById('sQty').value=s.qty;
-    document.getElementById('sPrice').value=s.pricePerUnit;
     document.getElementById('sBuyer').value=s.buyer||'';
-    _saleUnit=s.unit||'kg';
     _salePay=s.payment||'cash';
     _saleFarm=s.farm||'A';
     _saleHand=s.recordedBy||'Rod';
+    // Populate items from new or legacy format
+    _saleItemsList=saleItems(s).map(it=>({crop:it.crop,unit:it.unit||'kg',qty:it.qty,pricePerUnit:it.pricePerUnit,harvestId:it.harvestId||null}));
   } else {
     // New sale defaults
     document.getElementById('saleModalTitle').textContent='💰 New Sale / Uza';
     document.getElementById('sDate').value=todayStr();
-    document.getElementById('sQty').value='';
-    document.getElementById('sPrice').value='';
     document.getElementById('sBuyer').value='';
-    _saleUnit='kg';_salePay='cash';_saleFarm='A';_saleHand='Rod';
+    _salePay='cash';_saleFarm='A';_saleHand='Rod';
+    _saleItemsList=[{crop:'',unit:'kg',qty:null,pricePerUnit:null,harvestId:null}];
   }
 
-  // Set UI state for unit
-  document.querySelectorAll('#sUnitToggle .unit-opt').forEach(el=>el.classList.toggle('act',el.dataset.unit===_saleUnit));
-  document.getElementById('sUnitLabel').textContent=_saleUnit==='kg'?'(kg)':'(pcs)';
-  document.getElementById('sPriceLabel').textContent=_saleUnit==='kg'?'kg':'piece';
+  // Render line items
+  renderAllSaleItems();
 
   // Pay buttons
   document.querySelectorAll('#saleModal .pay-btn').forEach(el=>{el.classList.remove('act','act-credit');if(el.dataset.pay===_salePay)el.classList.add(_salePay==='credit'?'act-credit':'act')});
@@ -1632,22 +1722,10 @@ function openSaleModal(editId){
   // Farmhand buttons
   document.querySelectorAll('#sHandBtns .hand-btn').forEach(el=>el.classList.toggle('act',el.dataset.hand===_saleHand));
 
-  // Populate crops dropdown
-  const cSel=document.getElementById('sCrop');
-  const currentCrop=editId?sales.find(x=>x.id===editId)?.crop:'';
-  cSel.innerHTML='<option value="">— Select crop / Chagua zao —</option>';
-  for(const[k,v]of Object.entries(CROPS)){
-    if(!v.p)continue;
-    cSel.innerHTML+=`<option value="${k}"${k===currentCrop?' selected':''}>${v.n}${v.sw?' / '+v.sw:''}</option>`;
-  }
-
   // Buyer suggestions
   const dl=document.getElementById('buyerList');
   dl.innerHTML='';
   getBuyers().forEach(b=>dl.innerHTML+=`<option value="${b}">`);
-
-  calcTotal();
-  document.getElementById('sTotal').textContent=editId?document.getElementById('sTotal').textContent:'0';
 }
 
 function editSale(id){openSaleModal(id)}
@@ -1669,14 +1747,7 @@ function setHand(h,el){
   el.classList.add('act');
 }
 
-function setUnit(u,el){
-  _saleUnit=u;
-  document.querySelectorAll('#sUnitToggle .unit-opt').forEach(b=>b.classList.remove('act'));
-  el.classList.add('act');
-  document.getElementById('sUnitLabel').textContent=u==='kg'?'(kg)':'(pcs)';
-  document.getElementById('sPriceLabel').textContent=u==='kg'?'kg':'piece';
-  calcTotal();
-}
+// setUnit removed — unit is now per line item (see setSaleItemUnit)
 
 function setPay(p,el){
   _salePay=p;
@@ -1686,42 +1757,58 @@ function setPay(p,el){
 }
 
 function calcTotal(){
-  const q=parseFloat(document.getElementById('sQty').value)||0;
-  const p=parseFloat(document.getElementById('sPrice').value)||0;
-  const t=Math.round(q*p);
-  document.getElementById('sTotal').textContent=t.toLocaleString('en-KE');
+  let t=0;
+  _saleItemsList.forEach(item=>{
+    t+=Math.round((item.qty||0)*(item.pricePerUnit||0));
+  });
+  const el=document.getElementById('sTotal');
+  if(el)el.textContent=t.toLocaleString('en-KE');
 }
 
 async function saveSale(){
-  const crop=document.getElementById('sCrop').value;
   const date=document.getElementById('sDate').value;
-  const qty=parseFloat(document.getElementById('sQty').value)||0;
-  const price=parseFloat(document.getElementById('sPrice').value)||0;
   const buyer=document.getElementById('sBuyer').value.trim();
-  const total=Math.round(qty*price);
 
-  if(!crop){alert('Please select a crop / Chagua zao');return}
-  if(!qty||!price){alert('Enter quantity and price / Weka kiasi na bei');return}
+  // Validate items
+  const items=[];
+  for(const item of _saleItemsList){
+    if(!item.crop){alert('Please select a crop for each item / Chagua zao kwa kila bidhaa');return}
+    if(!item.qty||!item.pricePerUnit){alert('Enter quantity and price for each item / Weka kiasi na bei');return}
+    items.push({
+      crop:item.crop,
+      qty:item.qty,
+      unit:item.unit||'kg',
+      pricePerUnit:item.pricePerUnit,
+      total:Math.round(item.qty*item.pricePerUnit),
+      harvestId:item.harvestId||null
+    });
+  }
+
+  const total=items.reduce((sum,it)=>sum+it.total,0);
   if(_salePay==='credit'&&!buyer){alert('Buyer name required for credit / Jina la mnunuzi linahitajika kwa deni');return}
 
   if(_editingSaleId){
-    // Update existing sale
     const idx=sales.findIndex(s=>s.id===_editingSaleId);
     if(idx>=0){
-      sales[idx]={...sales[idx],date,crop,qty,unit:_saleUnit,pricePerUnit:price,total,buyer:buyer||null,payment:_salePay,farm:_saleFarm,recordedBy:_saleHand};
+      sales[idx]={...sales[idx],date,items,total,buyer:buyer||null,payment:_salePay,farm:_saleFarm,recordedBy:_saleHand};
+      // Keep legacy fields for first item (backward compat)
+      sales[idx].crop=items[0].crop;sales[idx].qty=items[0].qty;sales[idx].unit=items[0].unit;sales[idx].pricePerUnit=items[0].pricePerUnit;
       if(_dbReady) await DB.saveSale(sales[idx]);
     }
     closeSaleModal();
     renderSales();
     sS(`<span class="ok">✓ Sale updated: KES ${formatKES(total)}</span>`);
   } else {
-    // New sale — check for harvest link
     const hvLink=document.getElementById('saleModal').dataset.fromHarvest||null;
+    // If harvest link, attach to first item
+    if(hvLink&&items.length>0&&!items[0].harvestId)items[0].harvestId=hvLink;
     const sale={
       id:'sale_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
-      date,crop,qty,unit:_saleUnit,pricePerUnit:price,total,
+      date,items,total,
       buyer:buyer||null,payment:_salePay,
       farm:_saleFarm,recordedBy:_saleHand,
+      // Legacy fields (first item) for backward compat
+      crop:items[0].crop,qty:items[0].qty,unit:items[0].unit,pricePerUnit:items[0].pricePerUnit,
       harvestId:hvLink,fromHarvest:hvLink,createdAt:Date.now()
     };
     sales.push(sale);
@@ -1812,10 +1899,12 @@ function cropBreakdownHTML(startDate,endDate,title){
   const byCrop={};
   sales.forEach(s=>{
     if(s.date>=startDate&&s.date<=endDate){
-      const ci=CROPS[s.crop]||{c:'#aaa',n:s.crop};
-      if(!byCrop[s.crop])byCrop[s.crop]={name:ci.n,color:ci.c,kes:0,kg:0,pcs:0};
-      byCrop[s.crop].kes+=s.total;
-      if(s.unit==='kg')byCrop[s.crop].kg+=s.qty;else byCrop[s.crop].pcs+=s.qty;
+      saleItems(s).forEach(it=>{
+        const ci=CROPS[it.crop]||{c:'#aaa',n:it.crop};
+        if(!byCrop[it.crop])byCrop[it.crop]={name:ci.n,color:ci.c,kes:0,kg:0,pcs:0};
+        byCrop[it.crop].kes+=it.total||Math.round(it.qty*it.pricePerUnit);
+        if(it.unit==='kg')byCrop[it.crop].kg+=it.qty;else byCrop[it.crop].pcs+=it.qty;
+      });
     }
   });
   const crops=Object.values(byCrop).sort((a,b)=>b.kes-a.kes);
@@ -2216,8 +2305,15 @@ let _hvOpenSub=null;
 function getStorageInventory(){
   const items=[];
   harvests.filter(h=>h.destination==='store').forEach(h=>{
-    // Sum sales linked to this harvest
-    const sold=sales.filter(s=>s.fromHarvest===h.id).reduce((sum,s)=>sum+s.qty,0);
+    // Sum sold qty from all sale items linked to this harvest
+    let sold=0;
+    sales.forEach(s=>{
+      saleItems(s).forEach(it=>{
+        if(it.harvestId===h.id)sold+=it.qty;
+      });
+      // Also check legacy top-level fromHarvest
+      if(s.fromHarvest===h.id&&(!s.items||!s.items.length))sold+=s.qty||0;
+    });
     const remaining=h.qty-sold;
     if(remaining>0){
       items.push({harvestId:h.id,crop:h.crop,qty:h.qty,remaining,unit:h.unit,date:h.date});
@@ -2347,14 +2443,10 @@ async function saveHarvest(){
   closeHvModal();
 
   if(_hvDest==='sell'){
-    // Open sale modal pre-filled
+    // Open sale modal pre-filled with harvest crop
     openSaleModal();
-    document.getElementById('sCrop').value=crop;
-    document.getElementById('sQty').value=qty;
-    document.getElementById('sUnitLabel').textContent=_hvUnit==='kg'?'(kg)':'(pcs)';
-    document.getElementById('sPriceLabel').textContent=_hvUnit==='kg'?'kg':'piece';
-    _saleUnit=_hvUnit;
-    // Store harvestId link
+    _saleItemsList=[{crop:crop,unit:_hvUnit,qty:qty,pricePerUnit:null,harvestId:harvest.id}];
+    renderAllSaleItems();
     document.getElementById('saleModal').dataset.fromHarvest=harvest.id;
     sS('<span class="ok">✓ Harvested — now set price to complete sale</span>');
   } else {
@@ -2367,14 +2459,10 @@ async function saveHarvest(){
 // --- Sell from Storage ---
 function sellFromStorage(harvestId,crop,remaining,unit){
   openSaleModal();
-  document.getElementById('sCrop').value=crop;
-  document.getElementById('sQty').value=remaining;
-  _saleUnit=unit;
-  document.querySelectorAll('#sUnitToggle .unit-opt').forEach(el=>el.classList.toggle('act',el.dataset.unit===unit));
-  document.getElementById('sUnitLabel').textContent=unit==='kg'?'(kg)':'(pcs)';
-  document.getElementById('sPriceLabel').textContent=unit==='kg'?'kg':'piece';
+  // Pre-fill first item with storage details
+  _saleItemsList=[{crop:crop,unit:unit,qty:remaining,pricePerUnit:null,harvestId:harvestId}];
+  renderAllSaleItems();
   document.getElementById('saleModal').dataset.fromHarvest=harvestId;
-  calcTotal();
   sS('<span class="ok">Set price to sell from storage</span>');
 }
 
