@@ -17,9 +17,7 @@ const CONFIG = {
   ALLOWED_USERS: [
     'rodmwangi@gmail.com',
     'lonahwanjama13@gmail.com',
-    'levywanke@gmail.com',
-	'abeljoel507@gmail.com',
-	'kisuzaj@gmail.com'
+    'levywanke@gmail.com'
   ],
 
   // Admin users (can see Matumizi/Expenses)
