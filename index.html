@@ -473,14 +473,14 @@
     <div class="login-logo">🌿</div>
     <h1>Parsley's Farm</h1>
     <div class="login-sub">Shamba la Parsley — Kajiado County, 2.6 acres</div>
+    <input type="email" id="loginEmail" placeholder="Your email / Barua pepe yako" onkeydown="if(event.key==='Enter')Auth.signIn()" style="width:100%;padding:14px 16px;border:none;border-radius:8px;font-family:'Outfit';font-size:15px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.1);outline:none">
     <button class="login-btn" id="loginBtn" onclick="Auth.signIn()">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
-      Sign in with Google
+      Send sign-in link / Tuma kiunganishi
     </button>
     <button class="login-offline" id="offlineBtn" onclick="enterOffline()">
       Continue Offline / Endelea bila mtandao
     </button>
-    <div class="login-note">v3.1 · Authorized users only</div>
+    <div class="login-note" id="loginNote">v5.0 · Authorized users only</div>
   </div>
 </div>
 
@@ -876,9 +876,8 @@
 </div>
 
 <!-- Firebase SDK (compat mode for non-module script tags) -->
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script src="js/config.js"></script>
 <script src="js/db.js"></script>
@@ -1004,11 +1003,10 @@ let harvests=[];
 let _dbReady=false;
 let _offlineMode=false;
 
-// --- Load from Firestore ---
+// --- Load from IndexedDB (local, instant, works offline) ---
 async function load(){
   try {
     if(_dbReady){
-      // Load from Firestore (reads local cache when offline)
       const dbBeds=await DB.getAll('beds');
       if(dbBeds.length){dbBeds.forEach(d=>{const b=beds.find(x=>x.id===d.id);if(b)Object.assign(b,d)})}
       const dbCrops=await DB.getAll('crops');
@@ -1023,43 +1021,47 @@ async function load(){
   }catch(e){console.log('Load error:',e)}
 }
 
-// --- Save to Firestore ---
+// --- Save beds/crops to IndexedDB + trigger cloud sync ---
 async function save(){
   try {
     if(_dbReady){
-      // Save modified beds to Firestore
       for(const b of beds){
         if(b.crop!=='none'||b.plantingDate||b.dripLines||b.notes){
           await DB.saveBed({id:b.id,block:b.block,sub:b.sub,num:b.num,farm:b.farm,crop:b.crop,plantingDate:b.plantingDate,dripLines:b.dripLines,notes:b.notes});
         }
       }
-      // Save custom crops
       for(const[k,v]of Object.entries(CROPS)){
         if(!['none','onion_seedbed','onions','spinach','old_spinach','kale','nightshade','sweet_potatoes','sk_seedbed','okra_seedbed','cowpeas','cassava','spider_plant','coriander','capsicum','tomatoes','beans','maize','watermelon','uncultivated'].includes(k)){
           await DB.saveCrop(k,v);
         }
       }
       sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
+      // Push to cloud if online
+      if(navigator.onLine && Auth.isSignedIn()) Sync.pushChanges().catch(e=>console.warn('Push failed:',e));
     }
   }catch(e){console.error('Save error:',e);sS('Save failed')}
 }
 
-// --- Save individual record types (used by specific save functions) ---
+// --- Save individual record types ---
 async function saveSaleRecord(sale){
   if(_dbReady)await DB.saveSale(sale);
   sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
+  if(navigator.onLine && Auth.isSignedIn()) Sync.pushChanges().catch(()=>{});
 }
 async function saveActivityRecord(act){
   if(_dbReady)await DB.saveActivity(act);
   sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
+  if(navigator.onLine && Auth.isSignedIn()) Sync.pushChanges().catch(()=>{});
 }
 async function saveExpenseRecord(exp){
   if(_dbReady)await DB.saveExpense(exp);
   sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
+  if(navigator.onLine && Auth.isSignedIn()) Sync.pushChanges().catch(()=>{});
 }
 async function saveHarvestRecord(hv){
   if(_dbReady)await DB.saveHarvest(hv);
   sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
+  if(navigator.onLine && Auth.isSignedIn()) Sync.pushChanges().catch(()=>{});
 }
 
 function sS(h){document.getElementById('statusBar').innerHTML=h;if(h.includes('✓'))setTimeout(()=>document.getElementById('statusBar').innerHTML='Bonyeza kitanda kuhariri · Shift+click to multi-select',2500)}
@@ -2632,16 +2634,24 @@ function onAuthStateChanged(user, tokenReady){
     }
 
     if(tokenReady){
-      // Firestore syncs automatically — just load and render
+      // Authenticated — sync with Supabase then load
       updateSyncUI('syncing','Loading...');
-      load().then(()=>{
+      Sync.fullSync().then(()=>{
+        return load();
+      }).then(()=>{
         renderMap();renderBeds();renderList();updatePanel();
         if(currentTab==='sales')renderSales();
         updateSyncUI('ok','Connected ✓');
       }).catch(e=>{
-        console.error('Load after auth failed:',e);
-        updateSyncUI('error','Load failed');
+        console.error('Sync/load after auth failed:',e);
+        // Still load from local IndexedDB
+        load().then(()=>{
+          renderMap();renderBeds();renderList();updatePanel();
+          if(currentTab==='sales')renderSales();
+        });
+        updateSyncUI('error','Sync failed');
       });
+      Sync.startAutoSync();
     }
   } else {
     // User signed out
@@ -2666,6 +2676,8 @@ async function manualSync(){
   if(!navigator.onLine){sS('No internet / Hakuna mtandao');return}
   updateSyncUI('syncing','Syncing...');
   try{
+    await Sync.pushChanges();
+    await Sync.pullAll();
     await load();
     renderMap();renderBeds();renderList();updatePanel();
     if(currentTab==='sales')renderSales();
@@ -2686,25 +2698,25 @@ function enterOffline(){
 
 // INIT
 async function init(){
-  // 1. Initialize Firestore (enables offline persistence)
+  // 1. Open IndexedDB (local offline storage)
   try{
     await DB.open();
     _dbReady=true;
   }catch(e){
-    console.error('Firestore init failed:', e);
+    console.error('IndexedDB init failed:', e);
     _dbReady=false;
   }
 
-  // 2. Load data from Firestore (local cache if offline)
+  // 2. Load data from local IndexedDB (instant, works offline)
   await load();
 
   // 3. Render the map + UI
   renderMap();renderList();updatePanel();setView('A');
 
-  // 4. Initialize auth (Firebase Auth)
+  // 4. Initialize auth (Supabase + Google OAuth)
   Auth.init(onAuthStateChanged);
 
-  // 5. Initialize sync (stub — Firestore syncs automatically)
+  // 5. Initialize sync
   Sync.init(updateSyncUI);
 
   // 6. Online/offline status
@@ -2715,6 +2727,8 @@ async function init(){
   window.addEventListener('online',()=>{
     document.getElementById('offlineBtn').style.display='none';
     updateSyncUI('ok','Online');
+    // Push queued changes when back online
+    if(Auth.isSignedIn()) Sync.pushChanges().catch(e=>console.warn('Online push failed:',e));
   });
   window.addEventListener('offline',()=>{
     document.getElementById('offlineBtn').style.display='block';
