@@ -1,16 +1,21 @@
 // ============================================================
-// PARSLEY'S FARM — Configuration
+// PARSLEY'S FARM — Configuration (Supabase)
 // ============================================================
 
 const CONFIG = {
-  // Firebase
-  FIREBASE: {
-    apiKey: "AIzaSyAL1BzLZroJRieKCjMuUh8cOqHI5GcFn7k",
-    authDomain: "parsley-s-farm.firebaseapp.com",
-    projectId: "parsley-s-farm",
-    storageBucket: "parsley-s-farm.firebasestorage.app",
-    messagingSenderId: "1374745394",
-    appId: "1:1374745394:web:43429ab341ac38be2a9d2b"
+  // Supabase
+  SUPABASE_URL: 'https://xezqlemnvimgdbcnofyx.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhlenFsZW1udmltZ2RiY25vZnl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMTAwMTgsImV4cCI6MjA4ODg4NjAxOH0.nFKPtnpEPGWOVTFg0wXbANOOSsZPd1FV1T-ShSgnd-w',
+
+  // Supabase table name mapping (JS store name → Supabase table)
+  TABLES: {
+    beds: 'beds',
+    sales: 'sales',
+    harvests: 'harvests',
+    expenses: 'expenses',
+    activities: 'activities',
+    creditPayments: 'credit_payments',
+    crops: 'crops'
   },
 
   // Allowed users (Google emails)
@@ -18,8 +23,8 @@ const CONFIG = {
     'rodmwangi@gmail.com',
     'lonahwanjama13@gmail.com',
     'levywanke@gmail.com',
-	'abeljoel507@gmail.com',
-	'kisuzaj@gmail.com'
+    'abeljoel507@gmail.com',
+    'kisuzaj@gmail.com'
   ],
 
   // Admin users (can see Matumizi/Expenses)
@@ -34,5 +39,5 @@ const CONFIG = {
   EXPENSES_PIN: '5689',
 
   // App version
-  VERSION: '4.0.0'
+  VERSION: '5.0.0'
 };
