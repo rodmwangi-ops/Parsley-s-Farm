@@ -3,7 +3,7 @@
 // Offline-first caching (Supabase edition)
 // ============================================================
 
-const CACHE_NAME = 'parsleys-farm-v5.0';
+const CACHE_NAME = 'parsleys-farm-v5.2';
 
 const ASSETS = [
   './',
@@ -49,9 +49,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Network-first: Supabase API calls + Google OAuth
+  // Network-first: Supabase API calls + Google Auth (NOT fonts)
   if (url.hostname.includes('supabase.co') ||
-      url.hostname.includes('googleapis.com') ||
       url.hostname.includes('accounts.google.com')) {
     event.respondWith(
       fetch(event.request).catch(() => {
@@ -63,7 +62,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first: app files, Supabase SDK, fonts, everything else
+  // Cache-first: app files, Supabase SDK, Google Fonts, everything else
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) {
