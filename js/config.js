@@ -39,5 +39,5 @@ const CONFIG = {
   EXPENSES_PIN: '5689',
 
   // App version
-  VERSION: '5.0.0'
+  VERSION: '5.1.0'
 };
