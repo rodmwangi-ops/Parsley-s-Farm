@@ -215,6 +215,6 @@ const DB = (() => {
     saveActivity, deleteActivity,
     saveCreditPayment, saveCrop,
     getSyncQueue, clearSyncQueue, removeSyncItem,
-    mergeLoad
+    mergeLoad, queueSync
   };
 })();
