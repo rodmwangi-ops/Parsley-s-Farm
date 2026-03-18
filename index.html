@@ -1022,22 +1022,30 @@ async function load(){
 }
 
 // --- Save beds/crops to IndexedDB + trigger cloud sync ---
+// Track which beds actually changed to avoid saving all 290+
+let _dirtyBeds=new Set();
+function markBedDirty(id){_dirtyBeds.add(id)}
+
 async function save(){
   try {
     if(_dbReady){
-      for(const b of beds){
-        if(b.crop!=='none'||b.plantingDate||b.dripLines||b.notes){
-          await DB.saveBed({id:b.id,block:b.block,sub:b.sub,num:b.num,farm:b.farm,crop:b.crop,plantingDate:b.plantingDate,dripLines:b.dripLines,notes:b.notes});
-        }
+      // Only save beds that were actually modified (or all non-empty if no tracking yet)
+      const toSave=_dirtyBeds.size>0
+        ? beds.filter(b=>_dirtyBeds.has(b.id))
+        : beds.filter(b=>b.crop!=='none'||b.plantingDate||b.dripLines||b.notes);
+
+      for(const b of toSave){
+        await DB.saveBed({id:b.id,block:b.block,sub:b.sub,num:b.num,farm:b.farm,crop:b.crop,plantingDate:b.plantingDate,dripLines:b.dripLines,notes:b.notes});
       }
+      _dirtyBeds.clear();
+
       for(const[k,v]of Object.entries(CROPS)){
         if(!['none','onion_seedbed','onions','spinach','old_spinach','kale','nightshade','sweet_potatoes','sk_seedbed','okra_seedbed','cowpeas','cassava','spider_plant','coriander','capsicum','tomatoes','beans','maize','watermelon','uncultivated'].includes(k)){
           await DB.saveCrop(k,v);
         }
       }
       sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
-      // Push to cloud if online
-      if(navigator.onLine && Auth.isSignedIn()) Sync.pushChanges().catch(e=>console.warn('Push failed:',e));
+      pushIfOnline();
     }
   }catch(e){console.error('Save error:',e);sS('Save failed')}
 }
@@ -1046,25 +1054,36 @@ async function save(){
 async function saveSaleRecord(sale){
   if(_dbReady)await DB.saveSale(sale);
   sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
-  if(navigator.onLine && Auth.isSignedIn()) Sync.pushChanges().catch(()=>{});
+  pushIfOnline();
 }
 async function saveActivityRecord(act){
   if(_dbReady)await DB.saveActivity(act);
   sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
-  if(navigator.onLine && Auth.isSignedIn()) Sync.pushChanges().catch(()=>{});
+  pushIfOnline();
 }
 async function saveExpenseRecord(exp){
   if(_dbReady)await DB.saveExpense(exp);
   sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
-  if(navigator.onLine && Auth.isSignedIn()) Sync.pushChanges().catch(()=>{});
+  pushIfOnline();
 }
 async function saveHarvestRecord(hv){
   if(_dbReady)await DB.saveHarvest(hv);
   sS('<span class="ok">✓ Saved / Imehifadhiwa</span>');
-  if(navigator.onLine && Auth.isSignedIn()) Sync.pushChanges().catch(()=>{});
+  pushIfOnline();
 }
 
 function sS(h){document.getElementById('statusBar').innerHTML=h;if(h.includes('✓'))setTimeout(()=>document.getElementById('statusBar').innerHTML='Bonyeza kitanda kuhariri · Shift+click to multi-select',2500)}
+
+// --- Push to cloud after any data change (debounced) ---
+let _pushTimer=null;
+function pushIfOnline(){
+  if(!navigator.onLine||!Auth.isSignedIn())return;
+  // Debounce: if multiple saves happen rapidly, only push once after 500ms
+  clearTimeout(_pushTimer);
+  _pushTimer=setTimeout(()=>{
+    Sync.pushChanges().catch(e=>console.warn('Push failed:',e));
+  },500);
+}
 
 // ================================================================
 // SELECTION
@@ -1216,7 +1235,8 @@ async function applyEdit(){
   beds.forEach(b=>{if(!sel.has(b.id))return;
     if(cr){b.crop=cr;ch=true}if(dt){b.plantingDate=dt;ch=true}
     if(_drip!==undefined){b.dripLines=_drip;ch=true}
-    if(nt.trim()){b.notes=nt.trim();ch=true}});
+    if(nt.trim()){b.notes=nt.trim();ch=true}
+    if(ch)markBedDirty(b.id)});
   if(ch){renderBeds();renderList();updatePanel();await save()}_drip=undefined;
 }
 
@@ -1226,7 +1246,7 @@ async function uprootBeds(){
   const cropNames=[...new Set(planted.map(b=>(CROPS[b.crop]||{}).n||b.crop))].join(', ');
   if(!confirm(`Uproot ${planted.length} bed${planted.length>1?'s':''} (${cropNames})?\n\nThis clears crop and planting date.\nActivity history is preserved.\n\nNg'oa vitanda ${planted.length}?`))return;
 
-  planted.forEach(b=>{b.crop='none';b.plantingDate=null;b.notes=''});
+  planted.forEach(b=>{b.crop='none';b.plantingDate=null;b.notes='';markBedDirty(b.id)});
   renderBeds();renderList();updatePanel();
   await save();
   sS(`<span class="ok">✓ ${planted.length} bed${planted.length>1?'s':''} uprooted / Imeng'olewa</span>`);
@@ -1487,7 +1507,6 @@ let _monthOffset=0;
 // PIN protection
 let _expensesUnlocked=false;
 let _pinEntry='';
-const _PIN='5689';
 
 // --- Date helpers (timezone-safe, no UTC) ---
 function _fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
@@ -1799,6 +1818,7 @@ async function saveSale(){
     }
     closeSaleModal();
     renderSales();
+    pushIfOnline();
     sS(`<span class="ok">✓ Sale updated: KES ${formatKES(total)}</span>`);
   } else {
     const hvLink=document.getElementById('saleModal').dataset.fromHarvest||null;
@@ -1818,6 +1838,7 @@ async function saveSale(){
     delete document.getElementById('saleModal').dataset.fromHarvest;
     closeSaleModal();
     renderSales();
+    pushIfOnline();
     sS(`<span class="ok">✓ Sale recorded: KES ${formatKES(total)}</span>`);
   }
 }
@@ -1827,6 +1848,7 @@ async function deleteSale(id){
   if(_dbReady) await DB.deleteSale(id);
   sales=sales.filter(s=>s.id!==id);
   renderSales();
+  pushIfOnline();
   sS('<span class="ok">✓ Sale deleted</span>');
 }
 
@@ -1862,6 +1884,7 @@ async function recordPayment(){
   if(_dbReady) await DB.saveCreditPayment(creditPayments[creditPayments.length-1]);
   closePayModal();
   renderSales();
+  pushIfOnline();
   sS(`<span class="ok">✓ Payment recorded: KES ${formatKES(amt)} from ${_payBuyer}</span>`);
 }
 
@@ -1873,7 +1896,7 @@ function pinKey(n){
   _pinEntry+=n;
   updatePinDots();
   if(_pinEntry.length===4){
-    if(_pinEntry===_PIN){
+    if(_pinEntry===CONFIG.EXPENSES_PIN){
       _expensesUnlocked=true;
       document.getElementById('pinScreen').style.display='none';
       document.getElementById('expContent').style.display='block';
@@ -2151,6 +2174,7 @@ async function saveActivity(){
     }
     closeActModal();
     renderShughuli();
+    pushIfOnline();
     sS(`<span class="ok">✓ Activity updated</span>`);
   } else {
     const activity={
@@ -2168,6 +2192,7 @@ async function saveActivity(){
     if(_dbReady) await DB.saveActivity(activity);
     closeActModal();
     renderShughuli();
+    pushIfOnline();
     sS(`<span class="ok">✓ Activity logged: ${ACT_TYPES[_actType].name}</span>`);
   }
 }
@@ -2177,6 +2202,7 @@ async function deleteActivity(id){
   if(_dbReady) await DB.deleteActivity(id);
   activities=activities.filter(a=>a.id!==id);
   renderShughuli();
+  pushIfOnline();
   sS('<span class="ok">✓ Activity deleted</span>');
 }
 
@@ -2283,6 +2309,7 @@ async function saveExpense(){
   if(_dbReady) await DB.saveExpense(expenses[expenses.length-1]);
   closeExpModal();
   renderExpenses();
+  pushIfOnline();
   sS(`<span class="ok">✓ Expense recorded: KES ${formatKES(amount)}</span>`);
 }
 
@@ -2291,6 +2318,7 @@ async function deleteExpense(id){
   if(_dbReady) await DB.deleteExpense(id);
   expenses=expenses.filter(e=>e.id!==id);
   renderExpenses();
+  pushIfOnline();
   sS('<span class="ok">✓ Expense deleted</span>');
 }
 
@@ -2443,6 +2471,7 @@ async function saveHarvest(){
   harvests.push(harvest);
   if(_dbReady) await DB.saveHarvest(harvest);
   closeHvModal();
+  pushIfOnline();
 
   if(_hvDest==='sell'){
     // Open sale modal pre-filled with harvest crop
@@ -2716,8 +2745,16 @@ async function init(){
   // 4. Initialize auth (Supabase + Google OAuth)
   Auth.init(onAuthStateChanged);
 
-  // 5. Initialize sync
-  Sync.init(updateSyncUI);
+  // 5. Initialize sync (with pull-complete callback to refresh in-memory state)
+  Sync.init(updateSyncUI, async ()=>{
+    try{
+      await load();
+      renderBeds();renderList();
+      if(currentTab==='sales')renderSales();
+      if(currentTab==='shughuli')renderShughuli();
+      if(currentTab==='expenses'&&_expensesUnlocked)renderExpenses();
+    }catch(e){console.warn('Post-pull reload failed:',e)}
+  });
 
   // 6. Online/offline status
   if(!navigator.onLine){
