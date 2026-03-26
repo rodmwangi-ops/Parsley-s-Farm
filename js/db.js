@@ -54,11 +54,19 @@ const DB = (() => {
     });
   }
 
-  function getAll(storeName) {
+  function getAll(storeName, options = {}) {
+    const includeDeleted = !!options.includeDeleted;
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeName, 'readonly');
       const req = tx.objectStore(storeName).getAll();
-      req.onsuccess = () => resolve(req.result || []);
+      req.onsuccess = () => {
+        const rows = req.result || [];
+        if (includeDeleted || storeName === 'syncQueue' || storeName === 'meta') {
+          resolve(rows);
+          return;
+        }
+        resolve(rows.filter(r => !r?.deletedAt));
+      };
       req.onerror = (e) => reject(e.target.error);
     });
   }
@@ -95,9 +103,29 @@ const DB = (() => {
   function stamp(record) {
     if (!record || typeof record !== 'object') return record;
     const now = Date.now();
+    let user = null;
+    try { user = Auth.getUser(); } catch (_) { user = null; }
+    const updatedBy = user?.email || 'offline';
+    const deviceId = getDeviceId();
     if (!record.createdAt) record.createdAt = now;
     record.updatedAt = now;
+    record.updatedBy = updatedBy;
+    record.deviceId = deviceId;
     return record;
+  }
+
+  function getDeviceId() {
+    try {
+      const key = 'pf_device_id';
+      let id = localStorage.getItem(key);
+      if (!id) {
+        id = 'dev_' + Math.random().toString(36).slice(2, 10);
+        localStorage.setItem(key, id);
+      }
+      return id;
+    } catch (_) {
+      return 'dev_unknown';
+    }
   }
 
   // --- Sync Queue ---
@@ -111,7 +139,7 @@ const DB = (() => {
     });
   }
 
-  function getSyncQueue() { return getAll('syncQueue'); }
+  function getSyncQueue() { return getAll('syncQueue', { includeDeleted: true }); }
   function clearSyncQueue() { return _clear('syncQueue'); }
   function removeSyncItem(queueId) { return _remove('syncQueue', queueId); }
 
@@ -138,7 +166,10 @@ const DB = (() => {
   }
 
   async function deleteSale(id) {
-    try { await _remove('sales', id); await queueSync('delete', 'sales', { id }); }
+    try {
+      await _remove('sales', id);
+      await queueSync('delete', 'sales', stamp({ id, deletedAt: Date.now() }));
+    }
     catch (e) { console.error('deleteSale failed:', e); }
   }
 
@@ -148,7 +179,10 @@ const DB = (() => {
   }
 
   async function deleteHarvest(id) {
-    try { await _remove('harvests', id); await queueSync('delete', 'harvests', { id }); }
+    try {
+      await _remove('harvests', id);
+      await queueSync('delete', 'harvests', stamp({ id, deletedAt: Date.now() }));
+    }
     catch (e) { console.error('deleteHarvest failed:', e); }
   }
 
@@ -158,7 +192,10 @@ const DB = (() => {
   }
 
   async function deleteExpense(id) {
-    try { await _remove('expenses', id); await queueSync('delete', 'expenses', { id }); }
+    try {
+      await _remove('expenses', id);
+      await queueSync('delete', 'expenses', stamp({ id, deletedAt: Date.now() }));
+    }
     catch (e) { console.error('deleteExpense failed:', e); }
   }
 
@@ -168,7 +205,10 @@ const DB = (() => {
   }
 
   async function deleteActivity(id) {
-    try { await _remove('activities', id); await queueSync('delete', 'activities', { id }); }
+    try {
+      await _remove('activities', id);
+      await queueSync('delete', 'activities', stamp({ id, deletedAt: Date.now() }));
+    }
     catch (e) { console.error('deleteActivity failed:', e); }
   }
 
@@ -193,11 +233,25 @@ const DB = (() => {
     const pendingIds = new Set(
       queue.filter(q => q.store === storeName).map(q => q.recordId)
     );
+    const localRows = await getAll(storeName, { includeDeleted: true });
+    const localMap = new Map(localRows.map(r => [r.id, r]));
 
     const tx = db.transaction(storeName, 'readwrite');
     const store = tx.objectStore(storeName);
     for (const r of (records || [])) {
       if (!r || !r.id) continue;
+      const local = localMap.get(r.id);
+      const localUpdated = local?.updatedAt || 0;
+      const cloudUpdated = r.updatedAt || 0;
+
+      if (r.deletedAt) {
+        if (!local) continue;
+        if (cloudUpdated >= localUpdated) {
+          store.delete(r.id);
+        }
+        continue;
+      }
+
       if (pendingIds.has(r.id)) continue; // Don't overwrite local pending changes
       store.put(r);
     }

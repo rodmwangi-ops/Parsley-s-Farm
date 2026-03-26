@@ -3,7 +3,8 @@
 // Offline-first caching (Supabase edition)
 // ============================================================
 
-const CACHE_NAME = 'parsleys-farm-v5.2';
+const SW_VERSION = '5.2.0';
+const CACHE_NAME = `parsleys-farm-v${SW_VERSION}`;
 
 const ASSETS = [
   './',
