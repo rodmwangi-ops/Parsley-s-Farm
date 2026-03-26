@@ -94,6 +94,14 @@
   .sv-credit-owed{font-size:14px;font-weight:800;color:var(--warn);font-family:'Space Mono',monospace}
   .sv-credit-pay-btn{padding:5px 10px;background:var(--g1);color:#fff;border:none;border-radius:5px;font-family:'Outfit';font-size:10px;font-weight:700;cursor:pointer}
   .sv-credit-pay-btn:hover{background:var(--g2)}
+  .sv-credit-item.settled{border-color:#96b89e;background:#f5faf6}
+  .sv-credit-item.partial{border-color:#e0b45a;background:#fff9ef}
+  .sv-credit-item.unpaid{border-color:var(--warn);background:#fffdf7}
+  .sv-credit-status{font-size:9px;font-weight:800;font-family:'Space Mono',monospace;text-transform:uppercase;padding:2px 6px;border-radius:10px}
+  .sv-credit-status.unpaid{background:#fff0d8;color:#b87400}
+  .sv-credit-status.partial{background:#fff0d8;color:#b87400}
+  .sv-credit-status.settled{background:#e8f5ee;color:#2d6a4f}
+  .sv-credit-history{font-size:9px;color:var(--ink3);margin-top:4px;font-family:'Space Mono',monospace;line-height:1.45}
   .sv-empty{text-align:center;padding:30px 20px;color:var(--ink3);font-size:13px}
   .sv-empty-icon{font-size:32px;margin-bottom:8px;opacity:.5}
 
@@ -241,8 +249,13 @@
   .exp-item{display:flex;gap:10px;align-items:center;background:var(--paper);border:1.5px solid var(--border2);border-radius:8px;padding:10px 12px;margin-bottom:6px}
   .exp-item-cat{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;font-family:'Space Mono',monospace}
   .exp-item-amt{font-size:14px;font-weight:800;color:var(--err);font-family:'Space Mono',monospace;flex-shrink:0}
+  .exp-item-amt.in{color:var(--g1)}
+  .exp-item-amt.neutral{color:var(--ink2)}
   .exp-item-note{font-size:11px;color:var(--ink2)}
   .exp-item-date{font-size:9px;color:var(--ink3);font-family:'Space Mono',monospace}
+  .exp-flow-tag{display:inline-block;font-size:8px;font-weight:800;font-family:'Space Mono',monospace;text-transform:uppercase;padding:1px 5px;border-radius:8px;margin-left:4px;background:var(--bg);color:var(--ink3)}
+  .exp-flow-tag.owner{background:#eef4ff;color:#466da8}
+  .exp-flow-tag.biz{background:#e8f5ee;color:#2d6a4f}
   .exp-month-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:14px}
   .exp-month-label{font-size:14px;font-weight:700;color:var(--g1);min-width:120px;text-align:center}
 
@@ -375,26 +388,31 @@
   .btn-cl:hover{border-color:var(--err);color:var(--err)}
 
   /* Quick select */
-  .qs-grid{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px}
-  .qs-blk{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
-  .qs-blk-name{font-size:10px;font-weight:700;color:var(--ink2);font-family:'Space Mono',monospace;padding:3px 8px;border:1.5px solid var(--border);border-radius:3px;cursor:pointer;background:#fff;text-align:center}
+  .qs-grid{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+  .qs-blk{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
+  .qs-blk-name{font-size:11px;font-weight:700;color:var(--ink2);font-family:'Space Mono',monospace;padding:6px 8px;border:1.5px solid var(--border);border-radius:5px;cursor:pointer;background:#fff;text-align:center;min-height:30px;display:flex;align-items:center;justify-content:center}
   .qs-blk-name:hover{border-color:var(--g1);color:var(--g1)}
   .qs-blk-name.on{background:var(--g1);color:#fff;border-color:var(--g1)}
-  .qs-subs{display:flex;gap:2px}
-  .qs-sub{font-size:9px;padding:2px 5px;border:1px solid var(--border2);border-radius:2px;cursor:pointer;background:#fff;color:var(--ink3);font-family:'Space Mono',monospace}
+  .qs-subs{display:flex;gap:4px}
+  .qs-sub{font-size:10px;padding:5px 7px;border:1px solid var(--border2);border-radius:4px;cursor:pointer;background:#fff;color:var(--ink3);font-family:'Space Mono',monospace;min-height:28px;display:flex;align-items:center;justify-content:center}
   .qs-sub:hover{border-color:var(--g2);color:var(--g2)}
   .qs-sub.on{background:var(--g2);color:#fff;border-color:var(--g2)}
 
   /* Individual bed grid (calendar-style) */
-  .qs-beds-panel{margin-top:6px;padding:8px;background:var(--bg);border:1px solid var(--border2);border-radius:6px}
-  .qs-beds-header{font-size:10px;font-weight:700;color:var(--g1);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
-  .qs-beds-close{font-size:12px;cursor:pointer;color:var(--ink3);padding:2px 6px;border-radius:3px}
+  .qs-beds-panel{margin-top:8px;padding:10px;background:var(--bg);border:1px solid var(--border2);border-radius:8px}
+  .qs-beds-header{font-size:11px;font-weight:700;color:var(--g1);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+  .qs-beds-close{font-size:13px;cursor:pointer;color:var(--ink3);padding:3px 7px;border-radius:4px}
   .qs-beds-close:hover{background:var(--border2)}
-  .qs-beds-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
-  .qs-bed{font-size:10px;padding:5px 2px;text-align:center;border:1.5px solid var(--border);border-radius:4px;cursor:pointer;background:#fff;color:var(--ink2);font-family:'Space Mono',monospace;font-weight:600;transition:all .1s}
+  .qs-beds-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .qs-bed{font-size:11px;padding:8px 2px;text-align:center;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;background:#fff;color:var(--ink2);font-family:'Space Mono',monospace;font-weight:700;transition:all .1s;min-height:34px;touch-action:manipulation}
   .qs-bed:hover{border-color:var(--g1);color:var(--g1)}
-  .qs-bed.on{background:var(--g1);color:#fff;border-color:var(--g1)}
-  .qs-bed.planted{border-color:var(--g2);opacity:.9}
+  .qs-bed.on{background:var(--g1);color:#fff;border-color:var(--g1);box-shadow:0 0 0 2px rgba(45,106,79,.18)}
+  .qs-bed.planted{border-color:var(--g2);background:#f3fbf6}
+  .qs-bed.on.planted{box-shadow:0 0 0 2px rgba(45,106,79,.28), inset 0 0 0 1px rgba(255,255,255,.35)}
+  @media(max-width:768px){
+    .qs-beds-grid{grid-template-columns:repeat(6,1fr);gap:5px}
+    .qs-bed{min-height:38px}
+  }
 
   /* Expandable shughuli items */
   .sh-item{display:flex;gap:10px;background:var(--paper);border:1.5px solid var(--border2);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;transition:border-color .12s}
@@ -480,7 +498,7 @@
     <button class="login-offline" id="offlineBtn" onclick="enterOffline()">
       Continue Offline / Endelea bila mtandao
     </button>
-    <div class="login-note" id="loginNote">v5.0 · Authorized users only</div>
+    <div class="login-note" id="loginNote">v5.2.0 · Authorized users only</div>
   </div>
 </div>
 
@@ -603,7 +621,7 @@
 </div>
 
 <!-- STATUS -->
-<div class="status" id="statusBar">Bonyeza kitanda kuhariri · Shift+click to multi-select</div>
+<div class="status" id="statusBar">Bonyeza kitanda kuhariri · Chagua block/sub kwa multi-select</div>
 
 <!-- ADD CROP MODAL -->
 <div class="modal-bg" id="cropModal">
@@ -740,7 +758,7 @@
 
     <div id="actBedsSection">
       <div class="fld">
-        <label>Where / Wapi — pick block, sub or beds</label>
+        <label>Where / Wapi <span class="opt">(optional)</span> — pick block, sub or beds</label>
         <div id="actBedPicker" class="act-bed-picker"></div>
       </div>
     </div>
@@ -768,12 +786,30 @@
 </div>
 
 <!-- EXPENSE MODAL -->
-<div class="exp-modal-bg" id="expModal">
+  <div class="exp-modal-bg" id="expModal">
   <div class="exp-modal">
     <div class="sale-modal-handle"></div>
     <h2 id="expModalTitle">📊 New Expense / Matumizi Mapya</h2>
 
     <div class="fld">
+      <label>Money Record / Rekodi ya Pesa</label>
+      <div class="pay-btns" id="expFlowBtns">
+        <div class="pay-btn act" data-flow="expense" onclick="setExpFlow('expense',this)">Expense</div>
+        <div class="pay-btn" data-flow="topup" onclick="setExpFlow('topup',this)">Owner Top-up</div>
+        <div class="pay-btn" data-flow="withdrawal" onclick="setExpFlow('withdrawal',this)">Owner Withdraw</div>
+        <div class="pay-btn" data-flow="opening" onclick="setExpFlow('opening',this)">Opening Bal</div>
+      </div>
+    </div>
+
+    <div class="fld" id="expSourceWrap">
+      <label>Money Used From / Pesa imetoka</label>
+      <div class="pay-btns" id="expSourceBtns">
+        <div class="pay-btn act" data-source="business" onclick="setExpSource('business',this)">Business</div>
+        <div class="pay-btn" data-source="owner" onclick="setExpSource('owner',this)">Owner Pocket</div>
+      </div>
+    </div>
+
+    <div class="fld" id="expCatWrap">
       <label>Category / Aina</label>
       <div class="exp-cat-btns" id="expCatBtns">
         <div class="exp-cat-btn act" data-cat="seeds" onclick="setExpCat('seeds',this)">🌱 Mbegu<br>Seeds</div>
@@ -1072,7 +1108,7 @@ async function saveHarvestRecord(hv){
   pushIfOnline();
 }
 
-function sS(h){document.getElementById('statusBar').innerHTML=h;if(h.includes('✓'))setTimeout(()=>document.getElementById('statusBar').innerHTML='Bonyeza kitanda kuhariri · Shift+click to multi-select',2500)}
+function sS(h){document.getElementById('statusBar').innerHTML=h;if(h.includes('✓'))setTimeout(()=>document.getElementById('statusBar').innerHTML='Bonyeza kitanda kuhariri · Chagua block/sub kwa multi-select',2500)}
 
 // --- Push to cloud after any data change (debounced) ---
 let _pushTimer=null;
@@ -1096,7 +1132,7 @@ function selSub(bl,sub){const bs=beds.filter(b=>b.block===bl&&b.sub==sub);const 
 function qsExpandSub(bl,sub){const key=bl+'-'+sub;_qsOpenSub=_qsOpenSub===key?null:key;updatePanel()}
 function clrSel(){sel.clear();_qsOpenSub=null;refresh()}
 function refresh(){renderBeds();renderList();updatePanel();
-  const n=sel.size;sS(n?`${n} bed${n>1?'s':''} selected`:'Bonyeza kitanda kuhariri · Shift+click to multi-select')}
+  const n=sel.size;sS(n?`${n} bed${n>1?'s':''} selected`:'Bonyeza kitanda kuhariri · Chagua block/sub kwa multi-select')}
 
 // ================================================================
 // PANEL
@@ -1152,6 +1188,8 @@ function multiHTML(sb){
 }
 
 let _qsOpenSub=null; // e.g. 'A1-1' = block A1, sub 1 expanded
+let _clearPlantingDate=false;
+let _clearNotes=false;
 
 function editHTML(sb){
   const crs=[...new Set(sb.map(b=>b.crop))];const drps=[...new Set(sb.map(b=>b.dripLines))];
@@ -1161,7 +1199,8 @@ function editHTML(sb){
 
   let h=`<h3>Edit / Hariri${sb.length>1?` (${sb.length})`:''}</h3>`;
   // Quick select with subs + bed drill-down
-  h+=`<div style="margin-bottom:8px"><label style="font-size:9px;color:var(--ink3);font-family:'Space Mono',monospace;letter-spacing:.5px">QUICK SELECT — tap sub to see beds</label>`;
+  h+=`<div style="margin-bottom:8px"><label style="font-size:9px;color:var(--ink3);font-family:'Space Mono',monospace;letter-spacing:.5px">QUICK SELECT — tap block/sub, tap bed to select/deselect</label>`;
+  if(sel.size)h+=`<div style="margin:4px 0 2px"><span style="font-size:10px;color:var(--g2);cursor:pointer;font-weight:700" onclick="clrSel();updatePanel()">Clear selected beds / Futa uchaguzi</span></div>`;
   h+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:4px">`;
   ['A1','A2','A3','A4','B1','B2','B3','B4'].forEach(bl=>{
     const bds=beds.filter(b=>b.block===bl);const allS=bds.every(b=>sel.has(b.id));
@@ -1205,7 +1244,7 @@ function editHTML(sb){
   h+=`</select><div style="margin-top:4px"><span style="font-size:10px;color:var(--g2);cursor:pointer;font-weight:600" onclick="openCropModal()">+ Add new crop / Ongeza zao jipya</span></div></div>`;
 
   // Date
-  h+=`<div class="fld"><label>Planting Date / Tarehe <span class="opt">(optional)</span></label><input type="date" id="eD" value="${cdt}"></div>`;
+  h+=`<div class="fld"><label>Planting Date / Tarehe <span class="opt">(optional)</span></label><input type="date" id="eD" value="${cdt}"><div style="margin-top:4px"><span style="font-size:10px;color:var(--g2);cursor:pointer;font-weight:600" onclick="toggleClearPlantingDate(this)">${_clearPlantingDate?'Undo clear date / Rudisha tarehe':'Clear planting date / Futa tarehe'}</span></div></div>`;
 
   // Drip
   h+=`<div class="fld"><label>Drip Lines <span class="opt">(optional)</span></label><div class="drip-btns">`;
@@ -1213,7 +1252,7 @@ function editHTML(sb){
   h+=`<div class="drip-btn${cd===null?' act':''}" onclick="pD(null,this)" style="font-size:10px">—</div></div></div>`;
 
   // Notes
-  h+=`<div class="fld"><label>Notes / Maoni <span class="opt">(optional)</span></label><textarea id="eN" placeholder="Andika maoni...">${cn||''}</textarea></div>`;
+  h+=`<div class="fld"><label>Notes / Maoni <span class="opt">(optional)</span></label><textarea id="eN" placeholder="Andika maoni...">${cn||''}</textarea><div style="margin-top:4px"><span style="font-size:10px;color:var(--g2);cursor:pointer;font-weight:600" onclick="toggleClearNotes(this)">${_clearNotes?'Undo clear notes / Rudisha maoni':'Clear notes / Futa maoni'}</span></div></div>`;
 
   h+=`<div class="btn-row"><button class="btn-ap" onclick="applyEdit()">Apply / Tekeleza</button><button class="btn-cl" onclick="clrSel()">Clear</button></div>`;
 
@@ -1228,28 +1267,57 @@ function editHTML(sb){
 
 let _drip=undefined;
 function pD(n,el){_drip=n;el.parentNode.querySelectorAll('.drip-btn').forEach(b=>b.classList.remove('act'));el.classList.add('act')}
+function toggleClearPlantingDate(el){
+  _clearPlantingDate=!_clearPlantingDate;
+  if(_clearPlantingDate){
+    const i=document.getElementById('eD');
+    if(i)i.value='';
+  }
+  if(el)el.textContent=_clearPlantingDate?'Undo clear date / Rudisha tarehe':'Clear planting date / Futa tarehe';
+}
+function toggleClearNotes(el){
+  _clearNotes=!_clearNotes;
+  if(_clearNotes){
+    const i=document.getElementById('eN');
+    if(i)i.value='';
+  }
+  if(el)el.textContent=_clearNotes?'Undo clear notes / Rudisha maoni':'Clear notes / Futa maoni';
+}
 
 async function applyEdit(){
   const cr=document.getElementById('eC').value;const dt=document.getElementById('eD').value;
   const nt=document.getElementById('eN').value;let ch=false;
   beds.forEach(b=>{if(!sel.has(b.id))return;
     if(cr){b.crop=cr;ch=true}if(dt){b.plantingDate=dt;ch=true}
+    if(_clearPlantingDate){b.plantingDate=null;ch=true}
     if(_drip!==undefined){b.dripLines=_drip;ch=true}
     if(nt.trim()){b.notes=nt.trim();ch=true}
+    if(_clearNotes){b.notes='';ch=true}
     if(ch)markBedDirty(b.id)});
-  if(ch){renderBeds();renderList();updatePanel();await save()}_drip=undefined;
+  if(ch){renderBeds();renderList();updatePanel();await save()}
+  _drip=undefined;
+  _clearPlantingDate=false;
+  _clearNotes=false;
 }
 
 async function uprootBeds(){
   const planted=beds.filter(b=>sel.has(b.id)&&CROPS[b.crop]&&CROPS[b.crop].p);
   if(!planted.length)return;
   const cropNames=[...new Set(planted.map(b=>(CROPS[b.crop]||{}).n||b.crop))].join(', ');
-  if(!confirm(`Uproot ${planted.length} bed${planted.length>1?'s':''} (${cropNames})?\n\nThis clears crop and planting date.\nActivity history is preserved.\n\nNg'oa vitanda ${planted.length}?`))return;
+  if(!confirm(`Uproot ${planted.length} bed${planted.length>1?'s':''} (${cropNames})?\n\nThis clears crop, planting date, drip lines and notes.\nActivity history is preserved.\n\nNg'oa vitanda ${planted.length}?`))return;
 
-  planted.forEach(b=>{b.crop='none';b.plantingDate=null;b.notes='';markBedDirty(b.id)});
+  planted.forEach(b=>{
+    b.crop='none';
+    b.plantingDate=null;
+    b.dripLines=null;
+    b.notes='';
+    markBedDirty(b.id);
+  });
+  sel.clear();
+  _qsOpenSub=null;
   renderBeds();renderList();updatePanel();
   await save();
-  sS(`<span class="ok">✓ ${planted.length} bed${planted.length>1?'s':''} uprooted / Imeng'olewa</span>`);
+  sS(`<span class="ok">✓ ${planted.length} bed${planted.length>1?'s':''} uprooted (crop/date/drip/notes cleared) / Imeng'olewa</span>`);
 }
 
 function legendHTML(){
@@ -1415,6 +1483,24 @@ let _saleFarm='A';
 let _saleHand='Rod';
 let _editingSaleId=null;
 let _saleItemsList=[]; // [{crop,unit,qty,pricePerUnit,harvestId}]
+let _saleSaving=false;
+let _activitySaving=false;
+
+function setBusyButton(btn, busy, busyText){
+  if(!btn)return;
+  if(busy){
+    if(!btn.dataset.defaultText)btn.dataset.defaultText=btn.textContent;
+    btn.disabled=true;
+    btn.textContent=busyText;
+    btn.style.opacity='.7';
+    btn.style.cursor='wait';
+  }else{
+    btn.disabled=false;
+    btn.textContent=btn.dataset.defaultText||btn.textContent;
+    btn.style.opacity='';
+    btn.style.cursor='';
+  }
+}
 
 // --- Backward compat: extract items from old or new sale format ---
 function saleItems(s){
@@ -1543,6 +1629,14 @@ function formatMonth(ds){
   return months[d.getMonth()]+' '+d.getFullYear();
 }
 
+function normalizeBuyerName(raw){
+  return (raw||'').trim().replace(/\s+/g,' ');
+}
+
+function buyerKey(name){
+  return normalizeBuyerName(name).toLowerCase();
+}
+
 // --- Summary calculations for a period ---
 function periodSales(startDate,endDate){
   let kes=0,kg=0,count=0;
@@ -1559,25 +1653,37 @@ function periodSales(startDate,endDate){
 function creditSummary(){
   const byBuyer={};
   sales.filter(s=>s.payment==='credit').forEach(s=>{
-    if(!s.buyer)return;
-    if(!byBuyer[s.buyer])byBuyer[s.buyer]={owed:0,sales:[]};
-    byBuyer[s.buyer].owed+=s.total;
-    byBuyer[s.buyer].sales.push(s);
+    const displayName=normalizeBuyerName(s.buyer);
+    if(!displayName)return;
+    const key=s.buyerKey||buyerKey(displayName);
+    if(!byBuyer[key])byBuyer[key]={key,name:displayName,totalCredit:0,totalPaid:0,owed:0,status:'unpaid',sales:[],payments:[]};
+    byBuyer[key].totalCredit+=s.total||0;
+    byBuyer[key].sales.push(s);
+    // Keep latest non-empty display name (cleaned) for UI
+    byBuyer[key].name=displayName||byBuyer[key].name;
   });
   creditPayments.forEach(p=>{
-    if(byBuyer[p.buyer])byBuyer[p.buyer].owed-=p.amount;
+    const key=p.buyerKey||buyerKey(p.buyer);
+    if(byBuyer[key]){
+      byBuyer[key].totalPaid+=(p.amount||0);
+      byBuyer[key].payments.push(p);
+    }
   });
-  const result={};
-  for(const[name,data]of Object.entries(byBuyer)){
-    if(data.owed>0)result[name]=data;
-  }
-  return result;
+  const rows=Object.values(byBuyer).map(d=>{
+    d.owed=Math.max(0,Math.round((d.totalCredit-d.totalPaid)*100)/100);
+    if(d.owed<=0)d.status='settled';
+    else if(d.totalPaid>0)d.status='partial';
+    else d.status='unpaid';
+    d.payments.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+    return d;
+  }).sort((a,b)=>a.name.localeCompare(b.name));
+  return rows;
 }
 
 // --- Buyer suggestions ---
 function getBuyers(){
   const names=new Set();
-  sales.forEach(s=>{if(s.buyer)names.add(s.buyer)});
+  sales.forEach(s=>{const n=normalizeBuyerName(s.buyer);if(n)names.add(n)});
   return[...names].sort();
 }
 
@@ -1589,7 +1695,7 @@ function navMonth(dir){_monthOffset+=dir;renderSales()}
 function renderSales(){
   const sv=document.getElementById('svInner');
   const credits=creditSummary();
-  const creditNames=Object.keys(credits);
+  const unsettledCount=credits.filter(c=>c.status!=='settled').length;
   const recentSales=[...sales].sort((a,b)=>b.createdAt-a.createdAt).slice(0,50);
 
   // Calculate periods
@@ -1648,11 +1754,18 @@ function renderSales(){
   h+=`<div id="monthBreakdown" style="display:none">${cropBreakdownHTML(viewMonthStart,viewMonthEnd,formatMonth(viewMonthStart))}</div>`;
 
   // Credit section
-  if(creditNames.length){
-    h+=`<div class="sv-section">Deni / Credit<span class="sv-sec-r">${creditNames.length} buyer${creditNames.length>1?'s':''}</span></div>`;
-    creditNames.sort().forEach(name=>{
-      const c=credits[name];
-      h+=`<div class="sv-credit-item"><div class="sv-credit-name">${name}</div><div class="sv-credit-owed">KES ${formatKES(Math.round(c.owed))}</div><button class="sv-credit-pay-btn" onclick="openPayModal('${name.replace(/'/g,"\\'")}',${Math.round(c.owed)})">Pay / Lipa</button></div>`;
+  if(credits.length){
+    h+=`<div class="sv-section">Deni / Credit<span class="sv-sec-r">${unsettledCount} unpaid/partial</span></div>`;
+    credits.forEach(c=>{
+      const canPay=c.status!=='settled';
+      const hist=c.payments.slice(0,3).map(p=>`${formatDate(p.date)}: ${formatKES(p.amount)} (${p.method})`).join(' · ');
+      h+=`<div class="sv-credit-item ${c.status}">`;
+      h+=`<div style="flex:1"><div class="sv-credit-name">${c.name}</div><div class="sv-credit-history">Credit: ${formatKES(Math.round(c.totalCredit))} · Paid: ${formatKES(Math.round(c.totalPaid))}${hist?`<br>Recent payments: ${hist}`:''}</div></div>`;
+      h+=`<div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="sv-credit-status ${c.status}">${c.status}</span><div class="sv-credit-owed">KES ${formatKES(Math.round(c.owed))}</div></div>`;
+      if(canPay){
+        h+=`<button class="sv-credit-pay-btn" onclick="openPayModal('${c.key}',${Math.round(c.owed)})">Pay / Lipa</button>`;
+      }
+      h+=`</div>`;
     });
   }
 
@@ -1787,8 +1900,13 @@ function calcTotal(){
 }
 
 async function saveSale(){
+  if(_saleSaving)return;
+  const saveBtn=document.querySelector('#saleModal .sale-save-btn');
+  _saleSaving=true;
+  setBusyButton(saveBtn,true,'Saving... / Inahifadhi...');
+  try{
   const date=document.getElementById('sDate').value;
-  const buyer=document.getElementById('sBuyer').value.trim();
+  const buyer=normalizeBuyerName(document.getElementById('sBuyer').value);
 
   // Validate items
   const items=[];
@@ -1811,7 +1929,12 @@ async function saveSale(){
   if(_editingSaleId){
     const idx=sales.findIndex(s=>s.id===_editingSaleId);
     if(idx>=0){
-      sales[idx]={...sales[idx],date,items,total,buyer:buyer||null,payment:_salePay,farm:_saleFarm,recordedBy:_saleHand};
+      const original=sales[idx];
+      const payment=(original.payment==='credit'&&_salePay!=='credit')?'credit':_salePay;
+      if(original.payment==='credit'&&_salePay!=='credit'){
+        alert('This sale was recorded as credit and will stay credit for history. / Mauzo haya yalikuwa deni, yatasalia deni.');
+      }
+      sales[idx]={...sales[idx],date,items,total,buyer:buyer||null,buyerKey:buyer?buyerKey(buyer):null,payment,farm:_saleFarm,recordedBy:_saleHand};
       // Keep legacy fields for first item (backward compat)
       sales[idx].crop=items[0].crop;sales[idx].qty=items[0].qty;sales[idx].unit=items[0].unit;sales[idx].pricePerUnit=items[0].pricePerUnit;
       if(_dbReady) await DB.saveSale(sales[idx]);
@@ -1827,7 +1950,7 @@ async function saveSale(){
     const sale={
       id:'sale_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
       date,items,total,
-      buyer:buyer||null,payment:_salePay,
+      buyer:buyer||null,buyerKey:buyer?buyerKey(buyer):null,payment:_salePay,
       farm:_saleFarm,recordedBy:_saleHand,
       // Legacy fields (first item) for backward compat
       crop:items[0].crop,qty:items[0].qty,unit:items[0].unit,pricePerUnit:items[0].pricePerUnit,
@@ -1841,6 +1964,13 @@ async function saveSale(){
     pushIfOnline();
     sS(`<span class="ok">✓ Sale recorded: KES ${formatKES(total)}</span>`);
   }
+  }catch(e){
+    console.error('saveSale failed:',e);
+    alert('Save failed. Please try again. / Imehifadhiwa imeshindwa, jaribu tena.');
+  }finally{
+    _saleSaving=false;
+    setBusyButton(saveBtn,false,'');
+  }
 }
 
 async function deleteSale(id){
@@ -1853,10 +1983,13 @@ async function deleteSale(id){
 }
 
 // --- Credit Payment Modal ---
-function openPayModal(buyer,owed){
-  _payBuyer=buyer;_payMethod='cash';
+function openPayModal(buyerKeyValue,owed){
+  _payBuyer=buyerKeyValue;_payMethod='cash';
+  const credits=creditSummary();
+  const c=credits.find(x=>x.key===buyerKeyValue);
+  const displayName=c?c.name:buyerKeyValue;
   document.getElementById('payModal').classList.add('show');
-  document.getElementById('payModalBuyer').textContent=buyer;
+  document.getElementById('payModalBuyer').textContent=displayName;
   document.getElementById('payModalOwed').textContent=`Owes: KES ${formatKES(owed)}`;
   document.getElementById('payAmt').value=owed;
   document.getElementById('payAmt').max=owed;
@@ -1873,9 +2006,17 @@ function setPayMethod(m,el){
 async function recordPayment(){
   const amt=parseFloat(document.getElementById('payAmt').value)||0;
   if(!amt||!_payBuyer){alert('Enter amount / Weka kiasi');return}
+  const credits=creditSummary();
+  const c=credits.find(x=>x.key===_payBuyer);
+  const owedNow=c?c.owed:0;
+  if(amt>owedNow){
+    alert(`Amount is more than owed (KES ${formatKES(Math.round(owedNow))}). / Kiasi kimezidi deni.`);
+    return;
+  }
   creditPayments.push({
     id:'pay_'+Date.now(),
-    buyer:_payBuyer,
+    buyer:c?c.name:_payBuyer,
+    buyerKey:_payBuyer,
     amount:amt,
     method:_payMethod,
     date:todayStr(),
@@ -1885,7 +2026,7 @@ async function recordPayment(){
   closePayModal();
   renderSales();
   pushIfOnline();
-  sS(`<span class="ok">✓ Payment recorded: KES ${formatKES(amt)} from ${_payBuyer}</span>`);
+  sS(`<span class="ok">✓ Payment recorded: KES ${formatKES(amt)} from ${c?c.name:_payBuyer}</span>`);
 }
 
 // ================================================================
@@ -2069,7 +2210,7 @@ function openActModal(editId){
   document.querySelectorAll('#actTypeBtns .act-type-btn').forEach(el=>{el.classList.toggle('act',el.dataset.type===_actType)});
   document.querySelectorAll('#actHandBtns .hand-btn').forEach(el=>{el.classList.toggle('act',el.dataset.hand===_actHand)});
   document.getElementById('actSprayFields').style.display=_actType==='spray'?'block':'none';
-  document.getElementById('actBedsSection').style.display=_actType==='other'?'none':'block';
+  document.getElementById('actBedsSection').style.display='block';
 
   // Product suggestions from past activities
   const dl=document.getElementById('productList');dl.innerHTML='';
@@ -2088,8 +2229,7 @@ function setActType(t,el){
   document.querySelectorAll('#actTypeBtns .act-type-btn').forEach(b=>b.classList.remove('act'));
   el.classList.add('act');
   document.getElementById('actSprayFields').style.display=t==='spray'?'block':'none';
-  document.getElementById('actBedsSection').style.display=t==='other'?'none':'block';
-  if(t==='other')_actSelBeds=new Set();
+  document.getElementById('actBedsSection').style.display='block';
 }
 function setActHand(h,el){
   _actHand=h;
@@ -2101,7 +2241,7 @@ let _actOpenSub=null; // e.g. 'B1-2' for activity bed picker
 
 function renderActBedPicker(){
   const picker=document.getElementById('actBedPicker');
-  let h='<div style="font-size:9px;color:var(--ink3);margin-bottom:4px;font-family:\'Space Mono\',monospace">Tap sub to pick individual beds</div>';
+  let h='<div style="font-size:10px;color:var(--ink3);margin-bottom:6px;font-family:\'Space Mono\',monospace">Tap block/sub, then tap bed number to select or deselect</div>';
   h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px">';
   ['A1','A2','A3','A4','B1','B2','B3','B4'].forEach(bl=>{
     const bds=beds.filter(b=>b.block===bl);
@@ -2135,7 +2275,7 @@ function renderActBedPicker(){
     }
   }
 
-  if(_actSelBeds.size)h+=`<div style="font-size:10px;color:var(--g1);margin-top:4px;font-weight:600">${_actSelBeds.size} beds selected</div>`;
+  if(_actSelBeds.size)h+=`<div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--g1);margin-top:6px;font-weight:700"><span>${_actSelBeds.size} beds selected</span><span style="color:var(--g2);cursor:pointer" onclick="_actSelBeds=new Set();renderActBedPicker()">Clear / Futa</span></div>`;
   picker.innerHTML=h;
 }
 function actExpandSub(bl,sub){const key=bl+'-'+sub;_actOpenSub=_actOpenSub===key?null:key;renderActBedPicker()}
@@ -2157,19 +2297,23 @@ function actToggleBed(id){
 }
 
 async function saveActivity(){
+  if(_activitySaving)return;
+  const saveBtn=document.querySelector('#actModal .sale-save-btn');
+  _activitySaving=true;
+  setBusyButton(saveBtn,true,'Saving... / Inahifadhi...');
+  try{
   const date=document.getElementById('actDate').value;
   const product=document.getElementById('actProduct').value.trim();
   const rate=document.getElementById('actRate').value.trim();
   const details=document.getElementById('actDetails').value.trim();
 
   if(!date){alert('Date required / Tarehe inahitajika');return}
-  if(_actType!=='other'&&!_actSelBeds.size){alert('Select beds / Chagua vitanda');return}
 
   if(_editingActId){
     // Update existing
     const idx=activities.findIndex(a=>a.id===_editingActId);
     if(idx>=0){
-      activities[idx]={...activities[idx],date,type:_actType,beds:_actType==='other'?[]:[..._actSelBeds],recordedBy:_actHand,product:_actType==='spray'?product:'',rate:_actType==='spray'?rate:'',details};
+      activities[idx]={...activities[idx],date,type:_actType,beds:[..._actSelBeds],recordedBy:_actHand,product:_actType==='spray'?product:'',rate:_actType==='spray'?rate:'',details};
       if(_dbReady) await DB.saveActivity(activities[idx]);
     }
     closeActModal();
@@ -2180,7 +2324,7 @@ async function saveActivity(){
     const activity={
       id:'act_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
       date,type:_actType,
-      beds:_actType==='other'?[]:[..._actSelBeds],
+      beds:[..._actSelBeds],
       recordedBy:_actHand,
       product:_actType==='spray'?product:'',
       rate:_actType==='spray'?rate:'',
@@ -2194,6 +2338,13 @@ async function saveActivity(){
     renderShughuli();
     pushIfOnline();
     sS(`<span class="ok">✓ Activity logged: ${ACT_TYPES[_actType].name}</span>`);
+  }
+  }catch(e){
+    console.error('saveActivity failed:',e);
+    alert('Save failed. Please try again. / Imehifadhiwa imeshindwa, jaribu tena.');
+  }finally{
+    _activitySaving=false;
+    setBusyButton(saveBtn,false,'');
   }
 }
 
@@ -2228,6 +2379,41 @@ const EXP_CATS={
 let _expCat='seeds';
 let _expMonthOffset=0;
 let _editingExpId=null;
+let _expFlow='expense'; // expense | topup | withdrawal | opening
+let _expSource='business'; // business | owner (normal expense only)
+
+function expenseFlow(e){return e.flowType||'expense'}
+function expenseSource(e){return e.fundSource||'business'}
+
+function estimateBusinessBalance(){
+  const sortedExp=[...expenses].sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  let opening=0,openingAt=0;
+  sortedExp.forEach(e=>{
+    if(expenseFlow(e)==='opening'&&(e.createdAt||0)>=openingAt){
+      opening=e.amount||0;
+      openingAt=e.createdAt||0;
+    }
+  });
+
+  let balance=opening;
+  let ownerPocketExpenses=0;
+  sales.forEach(s=>{if(s.payment!=='credit')balance+=s.total||0});
+  creditPayments.forEach(p=>{balance+=p.amount||0});
+
+  sortedExp.forEach(e=>{
+    if((e.createdAt||0)<openingAt)return;
+    const ft=expenseFlow(e);
+    const src=expenseSource(e);
+    const amt=e.amount||0;
+    if(ft==='topup')balance+=amt;
+    else if(ft==='withdrawal')balance-=amt;
+    else if(ft==='expense'){
+      if(src==='business')balance-=amt;
+      else ownerPocketExpenses+=amt;
+    }
+  });
+  return{balance,opening,ownerPocketExpenses};
+}
 
 function renderExpenses(){
   const sv=document.getElementById('expInner');
@@ -2237,11 +2423,16 @@ function renderExpenses(){
   const isCurrentMonth=_expMonthOffset===0;
 
   const monthExps=expenses.filter(e=>e.date>=viewMS&&e.date<=viewME);
-  const monthTotal=monthExps.reduce((s,e)=>s+e.amount,0);
+  const monthNormalExps=monthExps.filter(e=>expenseFlow(e)==='expense');
+  const monthTotal=monthNormalExps.reduce((s,e)=>s+e.amount,0);
+  const monthTopup=monthExps.filter(e=>expenseFlow(e)==='topup').reduce((s,e)=>s+e.amount,0);
+  const monthWithdraw=monthExps.filter(e=>expenseFlow(e)==='withdrawal').reduce((s,e)=>s+e.amount,0);
+  const monthOwnerPocket=monthNormalExps.filter(e=>expenseSource(e)==='owner').reduce((s,e)=>s+e.amount,0);
+  const biz=estimateBusinessBalance();
 
   // By category
   const byCat={};
-  monthExps.forEach(e=>{if(!byCat[e.category])byCat[e.category]=0;byCat[e.category]+=e.amount});
+  monthNormalExps.forEach(e=>{if(!byCat[e.category])byCat[e.category]=0;byCat[e.category]+=e.amount});
 
   let h='';
   h+=`<button class="exp-add-btn" onclick="openExpModal()">+ Matumizi Mapya / New Expense</button>`;
@@ -2253,8 +2444,12 @@ function renderExpenses(){
   h+=`<button class="sv-nav-btn" onclick="_expMonthOffset++;renderExpenses()"${isCurrentMonth?' style="visibility:hidden"':''}>›</button>`;
   h+=`</div>`;
 
+  // Lightweight business-money estimate
+  h+=`<div class="sv-card" style="margin-bottom:10px"><div class="sv-card-label">Estimated Business Balance</div><div class="sv-card-amt" style="color:${biz.balance<0?'var(--err)':'var(--g1)'}">${formatKES(Math.round(biz.balance))}</div><div class="sv-card-range" style="margin-top:2px">Opening: ${formatKES(Math.round(biz.opening))} · Owner-pocket this month: ${formatKES(Math.round(monthOwnerPocket))}</div><div class="sv-card-range" style="margin-top:4px">Uses latest opening balance. Operational estimate, not formal accounting.</div></div>`;
+
   // Total
   h+=`<div style="text-align:center;margin-bottom:14px"><div style="font-size:10px;color:var(--ink3);font-family:'Space Mono',monospace;text-transform:uppercase">Total Expenses</div><div style="font-size:24px;font-weight:900;color:var(--err);font-family:'Space Mono',monospace">KES ${formatKES(monthTotal)}</div></div>`;
+  h+=`<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--ink2);font-family:'Space Mono',monospace;margin:-8px 0 12px"><span>Top-up +${formatKES(Math.round(monthTopup))}</span><span>Owner withdraw -${formatKES(Math.round(monthWithdraw))}</span></div>`;
 
   // Categories
   h+=`<div class="sv-section">By Category / Kwa Aina</div>`;
@@ -2272,20 +2467,31 @@ function renderExpenses(){
   } else {
     sorted.forEach(e=>{
       const cat=EXP_CATS[e.category]||EXP_CATS.other;
-      h+=`<div class="exp-item"><div style="flex:1"><div class="exp-item-cat">${cat.icon} ${cat.name}</div>${e.note?`<div class="exp-item-note">${e.note}</div>`:''}<div class="exp-item-date">${formatDate(e.date)}</div></div><div class="exp-item-amt">-${formatKES(e.amount)}</div><button class="sv-item-del" onclick="event.stopPropagation();deleteExpense('${e.id}')">✕</button></div>`;
+      const ft=expenseFlow(e),src=expenseSource(e);
+      let title='',amtCls='exp-item-amt',amtPrefix='-';
+      if(ft==='topup'){title='⬆ Owner Top-up';amtCls='exp-item-amt in';amtPrefix='+';}
+      else if(ft==='withdrawal'){title='⬇ Owner Withdrawal';amtCls='exp-item-amt';amtPrefix='-';}
+      else if(ft==='opening'){title='📌 Opening Balance';amtCls='exp-item-amt neutral';amtPrefix='=';}
+      else{
+        title=`${cat.icon} ${cat.name}${src==='owner'?'<span class="exp-flow-tag owner">owner pocket</span>':'<span class="exp-flow-tag biz">business</span>'}`;
+      }
+      h+=`<div class="exp-item"><div style="flex:1"><div class="exp-item-cat">${title}</div>${e.note?`<div class="exp-item-note">${e.note}</div>`:''}<div class="exp-item-date">${formatDate(e.date)}</div></div><div class="${amtCls}">${amtPrefix}${formatKES(e.amount)}</div><button class="sv-item-del" onclick="event.stopPropagation();deleteExpense('${e.id}')">✕</button></div>`;
     });
   }
   sv.innerHTML=h;
 }
 
 function openExpModal(){
-  _editingExpId=null;_expCat='seeds';
+  _editingExpId=null;_expCat='seeds';_expFlow='expense';_expSource='business';
   document.getElementById('expModal').classList.add('show');
   document.getElementById('expModalTitle').textContent='📊 New Expense / Matumizi Mapya';
   document.getElementById('expDate').value=todayStr();
   document.getElementById('expAmount').value='';
   document.getElementById('expNote').value='';
   document.querySelectorAll('#expCatBtns .exp-cat-btn').forEach(el=>{el.classList.toggle('act',el.dataset.cat==='seeds')});
+  document.querySelectorAll('#expFlowBtns .pay-btn').forEach(el=>{el.classList.toggle('act',el.dataset.flow==='expense')});
+  document.querySelectorAll('#expSourceBtns .pay-btn').forEach(el=>{el.classList.toggle('act',el.dataset.source==='business')});
+  updateExpModalUI();
 }
 function closeExpModal(){document.getElementById('expModal').classList.remove('show')}
 
@@ -2293,6 +2499,27 @@ function setExpCat(c,el){
   _expCat=c;
   document.querySelectorAll('#expCatBtns .exp-cat-btn').forEach(b=>b.classList.remove('act'));
   el.classList.add('act');
+}
+
+function setExpFlow(flow,el){
+  _expFlow=flow;
+  document.querySelectorAll('#expFlowBtns .pay-btn').forEach(b=>b.classList.remove('act'));
+  el.classList.add('act');
+  updateExpModalUI();
+}
+
+function setExpSource(source,el){
+  _expSource=source;
+  document.querySelectorAll('#expSourceBtns .pay-btn').forEach(b=>b.classList.remove('act'));
+  el.classList.add('act');
+}
+
+function updateExpModalUI(){
+  const catWrap=document.getElementById('expCatWrap');
+  const sourceWrap=document.getElementById('expSourceWrap');
+  const isNormalExpense=_expFlow==='expense';
+  if(catWrap)catWrap.style.display=isNormalExpense?'block':'none';
+  if(sourceWrap)sourceWrap.style.display=isNormalExpense?'block':'none';
 }
 
 async function saveExpense(){
@@ -2304,13 +2531,23 @@ async function saveExpense(){
 
   expenses.push({
     id:'exp_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
-    date,category:_expCat,amount,note,createdAt:Date.now()
+    date,
+    category:_expFlow==='expense'?_expCat:'other',
+    flowType:_expFlow,
+    fundSource:_expFlow==='expense'?_expSource:'business',
+    amount,note,createdAt:Date.now()
   });
   if(_dbReady) await DB.saveExpense(expenses[expenses.length-1]);
   closeExpModal();
   renderExpenses();
   pushIfOnline();
-  sS(`<span class="ok">✓ Expense recorded: KES ${formatKES(amount)}</span>`);
+  const msgByFlow={
+    expense:'Expense recorded',
+    topup:'Owner top-up recorded',
+    withdrawal:'Owner withdrawal recorded',
+    opening:'Opening balance set'
+  };
+  sS(`<span class="ok">✓ ${msgByFlow[_expFlow]||'Record saved'}: KES ${formatKES(amount)}</span>`);
 }
 
 async function deleteExpense(id){
@@ -2602,13 +2839,18 @@ function renderBeds(){
   beds.forEach(bed=>{
     const ci=CROPS[bed.crop]||CROPS.none;const pl=ci.p;const iS=sel.has(bed.id);
     const r=E('rect',{x:bed.x,y:bed.y,width:bed.w,height:bed.h,fill:ci.c,
-      stroke:iS?'#2d6a4f':(pl?'#4a3a20':'#c4b8a0'),'stroke-width':iS?2.5:(pl?1:.5),
+      stroke:iS?'#0a7aff':(pl?'#4a3a20':'#c4b8a0'),'stroke-width':iS?3:(pl?1:.5),
       rx:1.2,opacity:bed.crop==='uncultivated'?.4:(pl?.88:.6),cursor:'pointer'});
-    if(iS)r.style.filter='drop-shadow(0 0 3px rgba(45,106,79,.5))';
+    if(iS)r.style.filter='drop-shadow(0 0 5px rgba(10,122,255,.65))';
     r.addEventListener('mouseenter',e=>showTip(e,bed));
     r.addEventListener('mousemove',e=>{tipEl.style.left=(e.clientX+14)+'px';tipEl.style.top=(e.clientY-10)+'px'});
     r.addEventListener('mouseleave',()=>tipEl.style.display='none');
-    r.addEventListener('click',e=>{e.stopPropagation();selBed(bed.id,e.shiftKey);if(!document.getElementById('pn').classList.contains('open'))togglePanel()});
+    r.addEventListener('click',e=>{
+      if(Date.now()<_ignoreBedTapUntil)return; // Prevent accidental taps after drag/pan
+      e.stopPropagation();
+      selBed(bed.id,e.shiftKey);
+      if(!document.getElementById('pn').classList.contains('open'))togglePanel();
+    });
     S.appendChild(r);bedRects[bed.id]=r;
   });
 }
@@ -2622,15 +2864,30 @@ function showTip(e,b){const ci=CROPS[b.crop]||CROPS.none;const d=b.plantingDate?
 function togglePanel(){document.getElementById('pn').classList.toggle('open')}
 
 // PAN & ZOOM
-let pan=false,px=0,py=0;
-mv.addEventListener('mousedown',e=>{pan=true;px=e.clientX;py=e.clientY});
-window.addEventListener('mousemove',e=>{if(!pan)return;vb.x-=(e.clientX-px)*(vb.w/mv.clientWidth);vb.y-=(e.clientY-py)*(vb.h/mv.clientHeight);px=e.clientX;py=e.clientY;svb()});
-window.addEventListener('mouseup',()=>pan=false);
+let pan=false,px=0,py=0,panSX=0,panSY=0,panMoved=false,_ignoreBedTapUntil=0;
+mv.addEventListener('mousedown',e=>{pan=true;px=e.clientX;py=e.clientY;panSX=e.clientX;panSY=e.clientY;panMoved=false});
+window.addEventListener('mousemove',e=>{
+  if(!pan)return;
+  if(!panMoved&&Math.hypot(e.clientX-panSX,e.clientY-panSY)>8)panMoved=true;
+  vb.x-=(e.clientX-px)*(vb.w/mv.clientWidth);vb.y-=(e.clientY-py)*(vb.h/mv.clientHeight);px=e.clientX;py=e.clientY;svb()
+});
+window.addEventListener('mouseup',()=>{if(panMoved)_ignoreBedTapUntil=Date.now()+280;pan=false});
 mv.addEventListener('wheel',e=>{e.preventDefault();const s=e.deltaY>0?1.1:.9;const r=mv.getBoundingClientRect();const mx=(e.clientX-r.left)/r.width,my=(e.clientY-r.top)/r.height;const nw=vb.w*s,nh=vb.h*s;vb.x+=(vb.w-nw)*mx;vb.y+=(vb.h-nh)*my;vb.w=nw;vb.h=nh;svb()},{passive:false});
 let ltd=0;
-mv.addEventListener('touchstart',e=>{if(e.touches.length===1){pan=true;px=e.touches[0].clientX;py=e.touches[0].clientY}if(e.touches.length===2)ltd=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY)},{passive:true});
-mv.addEventListener('touchmove',e=>{if(e.touches.length===1&&pan){vb.x-=(e.touches[0].clientX-px)*(vb.w/mv.clientWidth);vb.y-=(e.touches[0].clientY-py)*(vb.h/mv.clientHeight);px=e.touches[0].clientX;py=e.touches[0].clientY;svb()}if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const s=ltd/d;vb.w*=s;vb.h*=s;vb.x+=vb.w*(1-s)/2;vb.y+=vb.h*(1-s)/2;ltd=d;svb()}},{passive:true});
-mv.addEventListener('touchend',()=>pan=false);
+mv.addEventListener('touchstart',e=>{
+  if(e.touches.length===1){
+    pan=true;px=e.touches[0].clientX;py=e.touches[0].clientY;panSX=px;panSY=py;panMoved=false
+  }
+  if(e.touches.length===2)ltd=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY)
+},{passive:true});
+mv.addEventListener('touchmove',e=>{
+  if(e.touches.length===1&&pan){
+    if(!panMoved&&Math.hypot(e.touches[0].clientX-panSX,e.touches[0].clientY-panSY)>10)panMoved=true;
+    vb.x-=(e.touches[0].clientX-px)*(vb.w/mv.clientWidth);vb.y-=(e.touches[0].clientY-py)*(vb.h/mv.clientHeight);px=e.touches[0].clientX;py=e.touches[0].clientY;svb()
+  }
+  if(e.touches.length===2){const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);const s=ltd/d;vb.w*=s;vb.h*=s;vb.x+=vb.w*(1-s)/2;vb.y+=vb.h*(1-s)/2;ltd=d;svb()}
+},{passive:true});
+mv.addEventListener('touchend',()=>{if(panMoved)_ignoreBedTapUntil=Date.now()+320;pan=false});
 function zi(){const cx=vb.x+vb.w/2,cy=vb.y+vb.h/2;vb.w*=.7;vb.h*=.7;vb.x=cx-vb.w/2;vb.y=cy-vb.h/2;svb()}
 function zo(){const cx=vb.x+vb.w/2,cy=vb.y+vb.h/2;vb.w*=1.4;vb.h*=1.4;vb.x=cx-vb.w/2;vb.y=cy-vb.h/2;svb()}
 
@@ -2705,8 +2962,7 @@ async function manualSync(){
   if(!navigator.onLine){sS('No internet / Hakuna mtandao');return}
   updateSyncUI('syncing','Syncing...');
   try{
-    await Sync.pushChanges();
-    await Sync.pullAll();
+    await Sync.fullSync();
     await load();
     renderMap();renderBeds();renderList();updatePanel();
     if(currentTab==='sales')renderSales();
@@ -2725,8 +2981,78 @@ function enterOffline(){
   sS('Offline mode — data saved locally only');
 }
 
+let _backGuardReady=false;
+let _lastBackHintAt=0;
+
+function closeTopModalIfOpen(){
+  const modalClosers=[
+    ['saleModal','closeSaleModal'],
+    ['payModal','closePayModal'],
+    ['actModal','closeActModal'],
+    ['expModal','closeExpModal'],
+    ['hvModal','closeHvModal'],
+    ['cropModal','closeCropModal']
+  ];
+  for(const [id,closer] of modalClosers){
+    const el=document.getElementById(id);
+    if(el&&el.classList.contains('show')){
+      if(typeof window[closer]==='function')window[closer]();
+      else el.classList.remove('show');
+      return true;
+    }
+  }
+  return false;
+}
+
+function consumeBackPressInApp(){
+  if(closeTopModalIfOpen())return true;
+
+  const panel=document.getElementById('pn');
+  if(panel&&panel.classList.contains('open')){
+    panel.classList.remove('open');
+    return true;
+  }
+
+  if(typeof _actOpenSub!=='undefined'&&_actOpenSub){_actOpenSub=null;renderActBedPicker();return true;}
+  if(typeof _hvOpenSub!=='undefined'&&_hvOpenSub){_hvOpenSub=null;renderHvBedPicker();return true;}
+
+  if(currentTab!=='map'){switchTab('map');return true;}
+
+  if(sel.size){clrSel();return true;}
+
+  return false;
+}
+
+function setupBackButtonGuard(){
+  if(_backGuardReady)return;
+  _backGuardReady=true;
+
+  if(!history.state||!history.state.pfBackGuard){
+    history.pushState({pfBackGuard:true},'',location.href);
+  }
+
+  window.addEventListener('popstate',()=>{
+    if(consumeBackPressInApp()){
+      history.pushState({pfBackGuard:true},'',location.href);
+      return;
+    }
+
+    const now=Date.now();
+    if(now-_lastBackHintAt<1800){
+      _lastBackHintAt=0; // Allow next native back to exit app
+      return;
+    }
+    _lastBackHintAt=now;
+    sS('Bonyeza back tena kutoka app / Press back again to exit');
+    history.pushState({pfBackGuard:true},'',location.href);
+  });
+}
+
 // INIT
 async function init(){
+  const loginNote=document.getElementById('loginNote');
+  if(loginNote)loginNote.textContent=`v${CONFIG.VERSION} · Authorized users only`;
+
   // 1. Open IndexedDB (local offline storage)
   try{
     await DB.open();
@@ -2764,13 +3090,16 @@ async function init(){
   window.addEventListener('online',()=>{
     document.getElementById('offlineBtn').style.display='none';
     updateSyncUI('ok','Online');
-    // Push queued changes when back online
-    if(Auth.isSignedIn()) Sync.pushChanges().catch(e=>console.warn('Online push failed:',e));
+    // Run full sync when back online
+    if(Auth.isSignedIn()) Sync.fullSync().catch(e=>console.warn('Online full sync failed:',e));
   });
   window.addEventListener('offline',()=>{
     document.getElementById('offlineBtn').style.display='block';
     updateSyncUI('offline','Offline');
   });
+
+  // 6.5 Safer in-app back behavior (close in-app UI first before exit)
+  setupBackButtonGuard();
 
   // 7. Register service worker
   if('serviceWorker' in navigator){
