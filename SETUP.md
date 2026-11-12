@@ -1,218 +1,147 @@
-# Parsley's Farm — Setup Guide
+# Setting up Parsley's Farm v6
 
-## Overview
-This guide will help you deploy your farm management app with:
-- **Google Sign-In** (so you, Joel, and Joshua can each log in)
-- **Google Sheets backend** (all data synced to a spreadsheet you control)
-- **GitHub Pages hosting** (free, accessible from anywhere)
-- **Works offline** (service worker caches the app, IndexedDB stores data locally)
+Allow about 45 minutes. You need a laptop, your GitHub account, and a Supabase account. Do the steps in order.
 
-**Time needed:** ~30 minutes, one-time setup.
+**Before you start:** this version uses a **new, empty Supabase project**. Don't reuse the old one. Phones running the old app still hold unsent records, and they would push those stale records into the new database. A new project gives the app a new address, so that can't happen.
 
 ---
 
-## Step 1: Create a Google Sheet
+## Part 1. Create the database (Supabase)
 
-1. Go to **https://sheets.google.com**
-2. Click **+ Blank** to create a new spreadsheet
-3. Rename it to **"Parsley's Farm Data"**
-4. **Copy the Sheet ID** from the URL:
+### 1.1 Make a new project
+1. Go to https://supabase.com/dashboard and sign in.
+2. Click **New project**.
+3. Name it `parsleys-farm-v6`. Create a strong database password and save it somewhere safe (you'll rarely need it).
+4. For the region, pick the one closest to Kenya from the list.
+5. Click **Create new project** and wait 1 to 2 minutes for it to finish.
+
+### 1.2 Build the tables
+1. In the left menu, open **SQL Editor** and click **New query**.
+2. Open `supabase/01_schema.sql` from this folder in a text editor. Copy all of it, paste it into the editor, and click **Run**.
+   You should see "Success. No rows returned". Messages starting with "NOTICE" are normal.
+3. Click **New query** again. Paste all of `supabase/02_seed.sql` and click **Run**.
+   This loads today's farm: 206 beds, the crops, the blocks, the greenhouse, the regular bills and the products.
+4. Open `supabase/03_first_admin.sql` in a text editor and change three things:
+   - Replace `ROD-EMAIL@example.com` with your email.
+   - Replace `LORNA-EMAIL@example.com` with Mum's email. If you don't have it yet, delete her whole statement, from `insert` down to the semicolon.
+   - Replace `KIPCHOGE-EMAIL@example.com` with Kipchoge's email. If you don't have it yet, delete his whole statement, from `insert` down to the semicolon.
+   - Replace `0000` with the PIN you want for the Expenses screen.
+   Paste the edited file into a new query and click **Run**.
+
+To check it worked: open **Table Editor**, then the **beds** table. You should see 206 rows.
+
+### 1.3 Turn on sign-in by email code
+1. Left menu: **Authentication** → **Sign In / Providers**. Make sure **Email** is enabled.
+2. **Authentication** → **Emails** (on some dashboards, **Email Templates**) → **Magic Link**. Replace the message body with:
+
    ```
-   https://docs.google.com/spreadsheets/d/THIS_PART_IS_YOUR_SHEET_ID/edit
+   <h2>Your Parsley's Farm sign-in code</h2>
+   <p>Your code is: <strong>{{ .Token }}</strong></p>
+   <p>Or tap this link to sign in: <a href="{{ .ConfirmationURL }}">Sign in to Parsley's Farm</a></p>
    ```
-5. Save this ID — you'll need it in Step 4
 
-**Don't create any tabs manually** — the app will create them automatically (Beds, Sales, Harvests, Expenses, Activities, CreditPayments, Crops).
+   Click **Save**. Do the same for the **Confirm signup** template, so a person's very first sign-in also shows the code.
+   The code matters because a link from the email can open in the phone's browser instead of the installed app. Typing the code always works.
+3. **Authentication** → **URL Configuration**:
+   - **Site URL:** your app's address, for example `https://YOUR-GITHUB-NAME.github.io/Parsley-s-Farm/`
+   - **Redirect URLs:** add the same address.
+   Click **Save**.
 
----
+Supabase's built-in email service only sends a few emails per hour. That's fine for a small team. If codes stop arriving, wait an hour, or set up your own email sender under **Authentication** → **Emails** → **SMTP**.
 
-## Step 2: Set Up Google Cloud Project
+### 1.4 Copy the two settings the app needs
+1. **Project Settings** (gear icon) → **API**. On newer dashboards this is **API Keys**, and the anon key is under a **Legacy API keys** tab.
+2. Copy the **Project URL** (it looks like `https://abcdxyz.supabase.co`).
+3. Copy the **anon public** key (a long string starting with `eyJ`).
+4. Open `js/config.js` in a text editor and paste them between the quotes:
 
-This gives your app permission to access Google Sheets on behalf of signed-in users.
-
-1. Go to **https://console.cloud.google.com**
-2. Sign in with **rodmwangi@gmail.com**
-3. Click the project dropdown (top left) → **New Project**
-4. Name: **"Parsley Farm"** → Click **Create**
-5. Make sure this project is selected in the dropdown
-
-### Enable Google Sheets API:
-6. Go to **APIs & Services → Library** (left sidebar)
-7. Search **"Google Sheets API"**
-8. Click it → Click **Enable**
-
-### Configure OAuth Consent Screen:
-9. Go to **APIs & Services → OAuth consent screen**
-10. Choose **External** → Click **Create**
-11. Fill in:
-    - App name: **Parsley's Farm**
-    - User support email: **rodmwangi@gmail.com**
-    - Developer email: **rodmwangi@gmail.com**
-12. Click **Save and Continue** through the remaining steps
-13. On the **Test users** page, add:
-    - **rodmwangi@gmail.com**
-    - Joel's Gmail (when he has one)
-    - Joshua's Gmail (when he has one)
-14. Click **Save**
-
-### Create OAuth Client ID:
-15. Go to **APIs & Services → Credentials**
-16. Click **+ Create Credentials → OAuth client ID**
-17. Application type: **Web application**
-18. Name: **Parsley Farm Web**
-19. Under **Authorized JavaScript origins**, add:
-    - `https://YOUR_GITHUB_USERNAME.github.io`
-    - `http://localhost:8000` (for local testing)
-20. Click **Create**
-21. **Copy the Client ID** — it looks like: `123456789-xxxxx.apps.googleusercontent.com`
-
----
-
-## Step 3: Create GitHub Repository
-
-1. Go to **https://github.com** and sign in
-2. Click **+** → **New repository**
-3. Name: **parsleys-farm** (or whatever you prefer)
-4. Make it **Public** (required for free GitHub Pages)
-5. Click **Create repository**
-
-### Upload the files:
-6. Click **"uploading an existing file"** link
-7. Drag and drop ALL the project files:
+   ```js
+   SUPABASE_URL: 'https://abcdxyz.supabase.co',
+   SUPABASE_ANON_KEY: 'eyJhbGciOi...',
    ```
-   index.html
-   manifest.json
-   sw.js
-   js/config.js
-   js/auth.js
-   js/db.js
-   js/sync.js
-   icons/icon-192.svg
-   icons/icon-512.svg
-   ```
-8. Click **Commit changes**
 
-### Enable GitHub Pages:
-9. Go to **Settings** → **Pages** (left sidebar)
-10. Under **Source**, select **Deploy from a branch**
-11. Branch: **main**, folder: **/ (root)**
-12. Click **Save**
-13. Wait 1-2 minutes, then visit: `https://YOUR_USERNAME.github.io/parsleys-farm/`
+   Save the file. The anon key is meant to be public. The database rules decide who can read and change what. **Never** put the `service_role` key in the app.
 
 ---
 
-## Step 4: Configure the App
+## Part 2. Put the app online (GitHub)
 
-1. In your GitHub repo, click on **js/config.js**
-2. Click the **pencil icon** (edit) 
-3. Replace these values:
+Your app already lives in the GitHub repository `Parsley-s-Farm`, published with GitHub Pages. You'll replace its files with this version.
 
-```javascript
-GOOGLE_CLIENT_ID: 'YOUR_ACTUAL_CLIENT_ID.apps.googleusercontent.com',
-SHEET_ID: 'YOUR_ACTUAL_SHEET_ID',
-```
+### 2.1 Upload the new files
+1. Open your repository on github.com.
+2. Click **Add file** → **Upload files**.
+3. Drag in everything from this folder: `index.html`, `sw.js`, `manifest.json`, `README.md`, `SETUP.md`, `_config.yml`, and the folders `css`, `js`, `icons`, `supabase` and `tools`.
+   (The `.well-known` folder is already in your repository. Leave it as it is. It links the Android app.)
+4. Write a message such as "Version 6: fresh start" and click **Commit changes**.
 
-4. Click **Commit changes**
-5. Wait 1-2 minutes for GitHub Pages to rebuild
+### 2.2 Delete the old files
+These belong to the old app and are no longer used. Open each one on GitHub, click the **⋯** menu → **Delete file**, then commit:
+- `js/auth.js`
+- `js/db.js`
+- `js/sync.js`
+- `FINAL_SUPABASE_MIGRATION.sql`
 
----
-
-## Step 5: Test It
-
-1. Go to your app URL: `https://YOUR_USERNAME.github.io/parsleys-farm/`
-2. Click **Sign in with Google**
-3. Sign in with **rodmwangi@gmail.com**
-4. The app will:
-   - Create all tabs in your Google Sheet automatically
-   - Start syncing data
-   - Show the green sync indicator in the top bar
-5. Check your Google Sheet — you should see tabs: Beds, Sales, Harvests, etc.
+### 2.3 Check GitHub Pages
+**Settings** → **Pages**: the source should be **Deploy from a branch**, branch `main`, folder `/ (root)`. Wait 1 to 2 minutes after committing, then open your app's address.
 
 ---
 
-## Step 6: Add Team Members
+## Part 3. First sign-in
 
-When Joel and Joshua have Google accounts:
-1. **Share the Google Sheet** with their email addresses (Viewer or Editor)
-2. Add their emails to the **Google Cloud Console → OAuth consent screen → Test users**
-3. Edit `js/config.js` on GitHub to add their emails to `ALLOWED_USERS`
-4. Give them the app URL — they sign in with their own Google account
+1. On your phone, **remove the old app first**: long-press its icon → Remove/Uninstall. If you open the old app in a browser, close that tab too.
+2. Open your app's address in Chrome (Android) or Safari (iPhone).
+3. Enter your email and tap **Send code**. Type the 6-digit code from the email and tap **Sign in**.
+4. The farm loads. Add it to your home screen:
+   - **Android:** Chrome menu ⋮ → **Add to Home screen**
+   - **iPhone:** Share button → **Add to Home Screen**
+5. Open the app from the new icon and sign in once more there. After that, it stays signed in.
 
----
-
-## How It Works
-
-### Data Flow:
-```
-Joel records a sale on his phone
-    ↓
-Saved to IndexedDB (instant, works offline)
-    ↓
-Synced to Google Sheets (when online, every 60 seconds)
-    ↓
-Rod opens the Google Sheet from Wyoming and sees the sale
-    ↓
-OR Rod opens the app and pulls the latest data
-```
-
-### Offline Mode:
-- If there's no internet, the app works normally
-- All changes are saved locally in IndexedDB
-- When internet returns, changes push to Google Sheets automatically
-- Click the sync indicator in the top bar to force a sync
-
-### Data Safety:
-- **IndexedDB** = local copy on each device
-- **Google Sheets** = cloud backup you control
-- **Both are always in sync** when online
-- Even if Joel clears his browser, the data is safe in Google Sheets
+If you see "Not on the farm list yet", the email you typed doesn't exactly match the one in step 1.2.4. Fix it in Supabase: **Table Editor** → **people**.
 
 ---
 
-## Troubleshooting
+## Part 4. Add everyone else
 
-### "Access denied" after signing in
-- Make sure the email is in `ALLOWED_USERS` in config.js
-- Make sure the email is added as a Test user in Google Cloud Console
+In the app: **More** → **People and access**. Enter each person's name and email and pick a role:
 
-### "Sign in" button doesn't appear
-- Check that `GOOGLE_CLIENT_ID` is correct in config.js
-- Make sure your GitHub Pages URL is in the Authorized JavaScript origins
+| Role | Can do |
+|---|---|
+| Admin | Everything, including money and people. For you and Lorna |
+| Supervisor | Field records, edit beds, sales, add expenses. For the new manager |
+| Checker | Field records and edit beds. For Kipchoge; the Add expenses switch is already on for him |
+| Family | View everything, including money. For Levi |
+| Farm hand | Field records only. For Joel and Joshua |
 
-### Sync not working
-- Check the sync indicator (top bar) — click it to force sync
-- Make sure the Google Sheet is shared with the signed-in user
-- Check browser console (F12) for error messages
-
-### App doesn't load offline
-- Visit the app while online first (to cache it)
-- The service worker needs one initial online visit to cache all files
+You can switch individual permissions on or off under each person. Then send each of them the app's address. They sign in with their own email, the same way you did.
 
 ---
 
-## Local Development (Optional)
+## Part 5. Quick check (10 minutes)
 
-To test locally before deploying:
-```bash
-cd parsleys-farm
-python3 -m http.server 8000
-```
-Then open `http://localhost:8000` in your browser.
-
-Make sure `http://localhost:8000` is in your OAuth authorized origins (Step 2, #19).
-
----
-
-## Migrating Existing Data
-
-If you have data from the old artifact version (farm_app_v3.html):
-1. Open the old version and export/note your data
-2. The app will attempt to auto-migrate data from the old `window.storage` format
-3. After migration, your data will be in IndexedDB and will sync to Sheets on first sign-in
+- [ ] **Map:** both farms show. Joshua's Block B beds 5–7 say "Day … · Vegetative".
+- [ ] **Edit a bed:** tap one bed → **Bed details** → change the note → **Save changes**. The button at the top briefly shows "Saving…", then "All saved".
+- [ ] **Offline:** turn on airplane mode and record a note on a bed. The top button turns amber and says "1 waiting". Turn airplane mode off and it goes back to "All saved".
+- [ ] **Expenses:** the PIN unlocks it. Add a small test expense, then open it and delete it.
+- [ ] **Bills:** **Mark paid** on Rent, then **Undo**.
+- [ ] **Reports:** **Expenses** → **Reports** → **Download spreadsheet**.
+- [ ] **Another phone:** a change made on one phone appears on the other within a minute, or straight away after reopening the app.
 
 ---
 
-## Version
-- App: v3.1.0
-- Architecture: GitHub Pages + Google Sheets API + IndexedDB + Service Worker
-- Built for: Parsley's Farm, Kajiado County, Kenya (2.6 acres)
+## Fixing problems
+
+| What you see | What to do |
+|---|---|
+| The top button is red and says "… not saved" | Tap it. The message from the server explains why, usually missing permission. Fix the person's permissions, then tap **Try again**. |
+| The code email doesn't arrive | Check spam. Wait a few minutes. Supabase's free email has a low hourly limit. |
+| The app still looks like the old one | Close it fully and reopen it. If that doesn't help, remove the home-screen icon and add it again. |
+| "Connect once to load the farm" | The phone needs signal the first time. After that it works offline. |
+| You forgot the Expenses PIN | An admin can set a new one: **More** → **Change expenses PIN**. |
+
+## Changing things later
+- **Crops, colours, stages and feeding days:** More → Crops and calendar
+- **Products** (active ingredient, waiting days before harvest): More → Products
+- **Rent and salaries:** Expenses → Edit regular bills
+- **Greenhouse beds:** tap the greenhouse on Joel's map
+- **Starting data:** `js/seed-data.js` only matters for the first setup and demo mode. After setup, everything is edited in the app.

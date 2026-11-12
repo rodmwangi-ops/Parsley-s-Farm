@@ -1,91 +1,39 @@
 // ============================================================
-// PARSLEY'S FARM — Service Worker
-// Offline-first caching (Supabase edition)
+// PARSLEY'S FARM v6 — Offline support
+// App files: try the network first (so updates arrive), fall back to the saved copy.
+// Supabase requests are never touched here: the app's own outbox handles offline saving.
 // ============================================================
-
-const SW_VERSION = '5.2.0';
-const CACHE_NAME = `parsleys-farm-v${SW_VERSION}`;
-
-const ASSETS = [
-  './',
-  './index.html',
-  './js/config.js',
-  './js/auth.js',
-  './js/db.js',
-  './js/sync.js',
-  './js/app.js',
-  './manifest.json',
-  './icons/icon-192.svg',
-  './icons/icon-512.svg',
-  // Supabase SDK — versioned, safe to cache
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
+const VERSION = '6.0.0';
+const CACHE = `parsleys-farm-${VERSION}`;
+const SHELL = [
+  './', './index.html', './css/app.css?v=6.0.0',
+  './js/config.js?v=6.0.0', './js/layout.js?v=6.0.0', './js/seed-data.js?v=6.0.0', './js/store.js?v=6.0.0', './js/app.js?v=6.0.0',
+  './manifest.json', './icons/icon-192.svg', './icons/icon-512.svg',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'
 ];
 
-// Install: cache all assets
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS).catch(err => {
-        console.log('Some assets failed to cache:', err);
-        return Promise.allSettled(ASSETS.map(url => cache.add(url)));
-      });
-    })
-  );
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => Promise.allSettled(SHELL.map(u => c.add(u)))));
   self.skipWaiting();
 });
 
-// Activate: clean old caches
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      )
-    )
-  );
+self.addEventListener('activate', e => {
+  // Removes every older cache, including the old app's.
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
   self.clients.claim();
 });
 
-// Fetch handler
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-
-  // Network-first: Supabase API calls + Google Auth (NOT fonts)
-  if (url.hostname.includes('supabase.co') ||
-      url.hostname.includes('accounts.google.com')) {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return new Response(JSON.stringify({ error: 'offline' }), {
-          headers: { 'Content-Type': 'application/json' }
-        });
-      })
-    );
-    return;
-  }
-
-  // Cache-first: app files, Supabase SDK, Google Fonts, everything else
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) {
-        fetch(event.request).then(response => {
-          if (response && response.status === 200) {
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, response));
-          }
-        }).catch(() => { });
-        return cached;
+self.addEventListener('fetch', e => {
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.hostname.endsWith('supabase.co') || url.hostname.endsWith('supabase.in')) return;
+  e.respondWith(
+    fetch(req).then(res => {
+      if (res && res.ok && (url.origin === location.origin || url.hostname.includes('jsdelivr') || url.hostname.includes('gstatic') || url.hostname.includes('googleapis'))) {
+        const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy));
       }
-
-      return fetch(event.request).then(response => {
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      }).catch(() => {
-        if (event.request.destination === 'document') {
-          return caches.match('./index.html');
-        }
-      });
-    })
+      return res;
+    }).catch(() => caches.match(req).then(hit => hit || (req.mode === 'navigate' ? caches.match('./index.html') : undefined)))
   );
 });
