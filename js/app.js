@@ -288,6 +288,7 @@ function renderMore() {
   const rows = [['crops', 'Crops and calendar', 'Crops, colours, stages and feeding days', true], ['products', 'Products', 'Sprays and fertilisers, with waiting days before harvest', can('edit_beds') || can('money')],
     ['bills', 'Regular bills', 'Rent and salaries every month', can('money')], ['reports', 'Reports', 'Download or print records', can('edit_beds') || can('money')],
     ['people', 'People and access', 'Who can record, edit and see money', can('people')], ['pin', 'Change expenses PIN', 'For the Expenses screen', can('people')],
+    ['mypw', 'Set my password', 'Sign in without waiting for an email code', !Store.demo],
     ['gap', 'Records for GAP', 'What the app keeps for certification', true], ['sync', 'Sync and offline', 'How records get saved', true]];
   return `<h1>${T('more')}</h1><section class="card">${rows.filter(r => r[3]).map(r => `<button class="mrow" data-more="${r[0]}"><span class="tx"><b>${r[1]}</b><span>${r[2]}</span></span><span class="chev" aria-hidden="true">›</span></button>`).join('')}</section>
   <section class="card"><h3>Language / Lugha</h3><div class="seg"><button class="${st.lang === 'en' ? 'on' : ''}" data-lang="en">English</button><button class="${st.lang === 'sw' ? 'on' : ''}" data-lang="sw">Kiswahili</button></div></section>
@@ -502,6 +503,7 @@ function peopleSheet() {
   <button class="btn primary" data-act="addperson">Add person</button><p class="muted">They can then open the app and sign in with that email.</p>`);
 }
 function pinSheet() { openSheet(head('Change expenses PIN') + `<div class="field"><label for="f-p1">New PIN (4 to 8 digits)</label><input type="password" inputmode="numeric" id="f-p1" maxlength="8"></div><div class="field"><label for="f-p2">Type it again</label><input type="password" inputmode="numeric" id="f-p2" maxlength="8"></div>${ERR}${foot('Change PIN', 'savePin')}`); }
+function myPwSheet() { openSheet(head('Set my password', 'Use it with your email to sign in on any phone.') + `<div class="field"><label for="f-p1">New password (at least 8 characters)</label><input type="password" id="f-p1" autocomplete="new-password"></div><div class="field"><label for="f-p2">Type it again</label><input type="password" id="f-p2" autocomplete="new-password"></div>${ERR}${foot('Save password', 'saveMyPw')}`); }
 function syncSheet() {
   const s = Store.status();
   openSheet(head('Sync and offline') + `<p>With signal, every record goes straight to the server and the button at the top stays green. Without signal, records wait on this phone, the button turns amber and shows how many are waiting, and they send by themselves when signal returns.</p>
@@ -674,6 +676,10 @@ const SAVE = {
     live('bills').forEach(b => { if (!seen.has(b.id)) save('bills', { ...b, deleted: true }); });
     toast('Bills saved'); closeSheet();
   },
+  async saveMyPw() {
+    const a = q('#f-p1').value, b = q('#f-p2').value; if (a.length < 8) return err('Use at least 8 characters.'); if (a !== b) return err("The two passwords don't match.");
+    const { error } = await Store.setPassword(a); if (error) return err(error.message); toast('Password saved'); closeSheet();
+  },
   async savePin() {
     const a = q('#f-p1').value, b = q('#f-p2').value; if (!/^[0-9]{4,8}$/.test(a)) return err('Use 4 to 8 digits.'); if (a !== b) return err("The two PINs don't match.");
     const r = await Store.setPin(a); if (!r.ok) return err(r.msg || 'Could not change the PIN. Check your signal.'); toast('PIN changed'); closeSheet();
@@ -737,7 +743,7 @@ document.addEventListener('click', async e => {
   if ((m = t.closest('[data-rec]'))) { recordSheet(m.dataset.rec); return; }
   if ((m = t.closest('[data-bill]'))) { const b = D.bills[m.dataset.bill]; const mo = st.month; save('expenses', { id: Store.uid(), date: mo === thisMonth() ? today() : mo + '-01', category: b.category, lines: [{ item: b.name, amt: +b.amount }], total: +b.amount, supplier: '', paid_by: ME.name, method: 'M-Pesa', bill_id: b.id, bill_month: mo, deleted: false, created_by: EMAIL }); toast(`${b.name} marked paid`); render(); return; }
   if ((m = t.closest('[data-unbill]'))) { const b = D.bills[m.dataset.unbill]; const p = billPayment(b, st.month); if (p) save('expenses', { ...p, deleted: true }); toast(`${b.name} marked not paid`); render(); return; }
-  if ((m = t.closest('[data-more]'))) { const k = m.dataset.more; ({ crops: cropsSheet, products: productsSheet, bills: billsSheet, people: peopleSheet, pin: pinSheet, gap: gapSheet, sync: syncSheet, reports: reportsSheet })[k](); return; }
+  if ((m = t.closest('[data-more]'))) { const k = m.dataset.more; ({ crops: cropsSheet, products: productsSheet, bills: billsSheet, people: peopleSheet, pin: pinSheet, gap: gapSheet, sync: syncSheet, reports: reportsSheet, mypw: myPwSheet })[k](); return; }
   const a = t.closest('[data-act]'); if (!a) return; const act = a.dataset.act;
   if (act === 'back') { st.view = 'map'; sel.clear(); render(); window.scrollTo(0, 0); }
   else if (act === 'clearsel') { sel.clear(); render(); }
@@ -773,6 +779,8 @@ document.addEventListener('click', async e => {
   else if (act === 'discardfail') { if (!confirmTap(a, 'Tap again to discard')) return; Store.discardFailed(); syncSheet(); }
   else if (act === 'refresh') { a.textContent = 'Refreshing…'; await refresh(true); toast('Up to date'); syncSheet(); }
   else if (act === 'signout') { if (!confirmTap(a, 'Tap again to sign out')) return; await Store.signOut(); location.reload(); }
+  else if (act === 'pwlogin') pwLogin();
+  else if (act === 'showcode') { document.getElementById('codebox').hidden = false; a.hidden = true; }
   else if (act === 'sendcode') sendCode();
   else if (act === 'verifycode') verifyCode();
   else if (SAVE[act]) SAVE[act]();
@@ -781,6 +789,7 @@ scrim.addEventListener('click', closeSheet);
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && !sheet.hidden) closeSheet();
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('.blk')) { e.preventDefault(); openBlock(st.farm, e.target.dataset.open); }
+  if (e.key === 'Enter' && e.target.id === 'f-pw') pwLogin();
   if (e.key === 'Enter' && e.target.id === 'f-pin') document.querySelector('[data-act="unlock"]').click();
 });
 sheet.addEventListener('input', () => { if (q('#err')) q('#err').textContent = ''; if (hook) hook(); });
@@ -795,11 +804,23 @@ sheet.addEventListener('change', async e => {
 // ============================================================
 function showLogin(msg) {
   ME = null; document.getElementById('nav').hidden = true; document.getElementById('selbar').hidden = true; document.querySelector('.app').classList.add('nonav');
-  document.getElementById('main').innerHTML = `<div class="login"><span class="logo">PF</span><h1>Sign in</h1><p>Enter your email. We'll send you a 6-digit code.</p>
+  document.getElementById('syncTxt').textContent = 'Signed out';
+  document.getElementById('main').innerHTML = `<div class="login"><span class="logo">PF</span><h1>Sign in</h1>
   <div class="field"><label for="f-email">Email</label><input type="text" id="f-email" inputmode="email" autocomplete="email" placeholder="name@gmail.com"></div>
-  <button class="btn primary" data-act="sendcode">Send code</button>
-  <div id="codebox" hidden class="field"><label for="f-code">Code from the email</label><input type="text" id="f-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"><button class="btn primary" data-act="verifycode">Sign in</button><p class="muted">You can also tap the link in the email.</p></div>
+  <div class="field"><label for="f-pw">Password</label><input type="password" id="f-pw" autocomplete="current-password"></div>
+  <button class="btn primary" data-act="pwlogin">Sign in</button>
+  <button class="btn" data-act="showcode">No password? Email me a code instead</button>
+  <div id="codebox" hidden class="field"><button class="btn" data-act="sendcode">Send code</button><label for="f-code">Code from the email</label><input type="text" id="f-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"><button class="btn primary" data-act="verifycode">Sign in with code</button><p class="muted">You can also tap the link in the email.</p></div>
   <div class="err" id="lerr">${msg ? esc(msg) : ''}</div></div>`;
+}
+async function pwLogin() {
+  const em = document.getElementById('f-email').value.trim().toLowerCase(), pw = document.getElementById('f-pw').value; const le = document.getElementById('lerr');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { le.textContent = 'Enter a valid email address.'; return; }
+  if (!pw) { le.textContent = 'Enter your password.'; return; }
+  le.textContent = ''; const { data, error } = await Store.signInPassword(em, pw);
+  if (error) { le.textContent = /invalid/i.test(error.message) ? 'Wrong email or password.' : error.message; return; }
+  try { localStorage.setItem('pf6_email', em); } catch (e) { }
+  start(data.session.user.email);
 }
 async function sendCode() {
   const em = document.getElementById('f-email').value.trim().toLowerCase(); const le = document.getElementById('lerr');

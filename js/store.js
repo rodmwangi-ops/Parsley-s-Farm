@@ -69,6 +69,8 @@ const Store = (() => {
   const redirectUrl = () => location.href.split('#')[0].split('?')[0];
   const sendCode = email => supa.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectUrl(), shouldCreateUser: true } });
   const verifyCode = (email, token) => supa.auth.verifyOtp({ email, token, type: 'email' });
+  const signInPassword = (email, password) => supa.auth.signInWithPassword({ email, password });
+  const setPassword = password => supa.auth.updateUser({ password });
   const onAuth = cb => { if (!demo) supa.auth.onAuthStateChange((ev, s) => cb(ev, s)); };
   async function signOut() {
     if (!demo) await supa.auth.signOut();
@@ -192,6 +194,6 @@ const Store = (() => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
   }
 
-  return { demo, init, session, sendCode, verifyCode, onAuth, signOut, loadCache, saveCache, pull, pendingIds, put, flush, status, on,
+  return { demo, init, session, sendCode, verifyCode, signInPassword, setPassword, onAuth, signOut, loadCache, saveCache, pull, pendingIds, put, flush, status, on,
     retryFailed, discardFailed, checkPin, setPin, uploadPhoto, uid, TABLES };
 })();
