@@ -89,6 +89,10 @@ These belong to the old app and are no longer used. Open each one on GitHub, cli
 
 ## Part 3. First sign-in
 
+**Easiest way, with no emails needed:** in Supabase go to **Authentication** → **Users** → **Add user** → **Create new user**. Enter the person's email and a password, tick **Auto Confirm User**, and click **Create user**. They sign in on the app with that email and password, and can change the password later under **More** → **Set my password**. Do this for anyone whose code email doesn't arrive.
+
+**Or use an email code:**
+
 1. On your phone, **remove the old app first**: long-press its icon → Remove/Uninstall. If you open the old app in a browser, close that tab too.
 2. Open your app's address in Chrome (Android) or Safari (iPhone).
 3. Enter your email and tap **Send code**. Type the 6-digit code from the email and tap **Sign in**.

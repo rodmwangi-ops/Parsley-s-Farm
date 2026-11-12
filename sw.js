@@ -3,11 +3,11 @@
 // App files: try the network first (so updates arrive), fall back to the saved copy.
 // Supabase requests are never touched here: the app's own outbox handles offline saving.
 // ============================================================
-const VERSION = '6.0.0';
+const VERSION = '6.0.1';
 const CACHE = `parsleys-farm-${VERSION}`;
 const SHELL = [
-  './', './index.html', './css/app.css?v=6.0.0',
-  './js/config.js?v=6.0.0', './js/layout.js?v=6.0.0', './js/seed-data.js?v=6.0.0', './js/store.js?v=6.0.0', './js/app.js?v=6.0.0',
+  './', './index.html', './css/app.css?v=6.0.1',
+  './js/config.js?v=6.0.1', './js/layout.js?v=6.0.1', './js/seed-data.js?v=6.0.1', './js/store.js?v=6.0.1', './js/app.js?v=6.0.1',
   './manifest.json', './icons/icon-192.svg', './icons/icon-512.svg',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js'
 ];
