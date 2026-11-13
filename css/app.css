@@ -233,3 +233,7 @@ table.mm td.pos{color:var(--good)}table.mm td.neg{color:var(--bad)}
   #print th,#print td{border:1px solid #999;padding:4pt 5pt;text-align:left;vertical-align:top}
   #print th{background:#eee}
 }
+
+.strip .mini{color:var(--ink);background:#fff;border-color:#fff}
+.planrow{flex-direction:column;align-items:stretch}
+.planact{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}

@@ -1,5 +1,7 @@
 # Setting up Parsley's Farm v6
 
+> **Already running v6.0?** Skip to **Updating to v6.1** at the end.
+
 Allow about 45 minutes. You need a laptop, your GitHub account, and a Supabase account. Do the steps in order.
 
 **Before you start:** this version uses a **new, empty Supabase project**. Don't reuse the old one. Phones running the old app still hold unsent records, and they would push those stale records into the new database. A new project gives the app a new address, so that can't happen.
@@ -19,7 +21,7 @@ Allow about 45 minutes. You need a laptop, your GitHub account, and a Supabase a
 1. In the left menu, open **SQL Editor** and click **New query**.
 2. Open `supabase/01_schema.sql` from this folder in a text editor. Copy all of it, paste it into the editor, and click **Run**.
    You should see "Success. No rows returned". Messages starting with "NOTICE" are normal.
-3. Click **New query** again. Paste all of `supabase/02_seed.sql` and click **Run**.
+3. Click **New query** again. Paste all of `supabase/02_seed.sql` and click **Run**. Then do the same with `supabase/04_update_v6_1.sql`.
    This loads today's farm: 206 beds, the crops, the blocks, the greenhouse, the regular bills and the products.
 4. Open `supabase/03_first_admin.sql` in a text editor and change three things:
    - Replace `ROD-EMAIL@example.com` with your email.
@@ -115,7 +117,7 @@ In the app: **More** → **People and access**. Enter each person's name and ema
 | Supervisor | Field records, edit beds, sales, add expenses. For the new manager |
 | Checker | Field records and edit beds. For Kipchoge; the Add expenses switch is already on for him |
 | Family | View everything, including money. For Levi |
-| Farm hand | Field records only. For Joel and Joshua |
+| Farm hand | Field records and sales. For Joel and Joshua |
 
 You can switch individual permissions on or off under each person. Then send each of them the app's address. They sign in with their own email, the same way you did.
 
@@ -149,3 +151,28 @@ You can switch individual permissions on or off under each person. Then send eac
 - **Rent and salaries:** Expenses → Edit regular bills
 - **Greenhouse beds:** tap the greenhouse on Joel's map
 - **Starting data:** `js/seed-data.js` only matters for the first setup and demo mode. After setup, everything is edited in the app.
+
+---
+
+## Updating to v6.1
+
+v6.1 adds the bed survey, adding and removing beds, the Plan view, the M-Pesa till and cash balances, bill part-payments, the water meter, people without an app login, and a fix for phones that come back online after a long time.
+
+1. **Database (2 minutes).** In Supabase: **SQL Editor** → **New query**. Paste all of `supabase/04_update_v6_1.sql` and click **Run**. It keeps all your data and adds:
+   - the new tables
+   - the M-Pesa till charges
+   - the water meter starting reading (2,105 m³ on 1 Nov)
+   - the water bill
+   - the till's opening balance (KSh 1.99)
+   - sales permission for farm hands
+
+   It's safe to run twice.
+2. **App files.** On GitHub, upload the files from the update zip into the same folders they're in on your computer:
+   - main folder: `index.html`, `sw.js`, `SETUP.md`, `README.md`
+   - `css`: `app.css`
+   - `js`: `app.js`, `store.js`, `seed-data.js`
+   - `supabase`: `04_update_v6_1.sql`
+
+   **Don't upload `js/config.js`**: yours holds your Supabase settings.
+3. Wait 1 to 2 minutes, then open the app and pull down to refresh, or close and reopen it. **More** should show version 6.1.0.
+4. In the app: **Expenses** → **Update balances**, and type the till's real balance so it starts from the right figure.

@@ -5,7 +5,7 @@
 // Nothing is removed from the outbox until Supabase confirms it.
 // ============================================================
 const Store = (() => {
-  const TABLES = ['people', 'crops', 'blocks', 'beds', 'records', 'products', 'sales', 'store_items', 'bills', 'expenses'];
+  const TABLES = ['people', 'crops', 'blocks', 'beds', 'records', 'products', 'sales', 'store_items', 'bills', 'expenses', 'money_moves', 'water_readings', 'app_config'];
   const SERVER_FIELDS = ['updated_at', 'created_at', 'created_by', 'updated_by'];
   const demo = !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY;
   let supa = null, outbox = [], failed = [], lastPull = {}, flushing = false, timer = null;
@@ -134,11 +134,14 @@ const Store = (() => {
     clearTimeout(put._d); put._d = setTimeout(flush, 300);
   }
   const isNetworkError = e => !e || /fetch|network|timeout|offline|load failed/i.test(String(e.message || e));
+  // An expired sign-in is not the record's fault: renew it and try again, without counting it as a failure.
+  const isAuthError = e => e && (e.code === 'PGRST301' || e.status === 401 || /jwt|token|expired|not authenticated/i.test(String(e.message || '')));
   async function flush() {
     if (demo) { outbox = []; emit('status', status()); return; }
     if (flushing || !navigator.onLine || !outbox.length) return;
     flushing = true; emit('status', status());
     try {
+      try { await supa.auth.getSession(); } catch (e) { } // renews the sign-in first if it has expired
       while (outbox.length && navigator.onLine) {
         const it = outbox[0];
         let res;
@@ -146,6 +149,7 @@ const Store = (() => {
         catch (e) { res = { error: e }; }
         if (res.error) {
           if (isNetworkError(res.error)) break;
+          if (isAuthError(res.error)) { try { await supa.auth.refreshSession(); } catch (e) { } setTimeout(flush, 5000); break; }
           it.tries = (it.tries || 0) + 1; it.err = res.error.message || String(res.error);
           if (it.tries >= 3) { failed.push(outbox.shift()); await persist(); continue; }
           await persist(); break;

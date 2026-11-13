@@ -10,13 +10,13 @@
 
   SEED.crops = [
     { id: 'hoho', name: 'Hoho', name_sw: 'Pilipili hoho', color: '#1E7A34', kind: 'main', count_from: 'Transplant',
-      stages: [['Vegetative', 0], ['Flowering', 30], ['Fruiting', 60]], feeds: [['DAP', 14], ['CAN', 21], ['NPK 17:17:17', 35]], sort: 1 },
+      stages: [['Vegetative', 0], ['Flowering', 30], ['Fruiting', 60]], feeds: [['DAP', 14], ['CAN', 21], ['NPK 17:17:17', 35]], harvest_days: 120, sort: 1 },
     { id: 'dhania', name: 'Dhania', name_sw: 'Dhania', color: '#F2C12E', kind: 'main', count_from: 'Planting',
-      stages: [['Germinating', 0], ['Vegetative', 11], ['Ready to cut', 40]], feeds: [], sort: 2 },
+      stages: [['Germinating', 0], ['Vegetative', 11], ['Ready to cut', 40]], feeds: [], harvest_days: 10, sort: 2 },
     { id: 'kunde', name: 'Kunde', name_sw: 'Kunde', color: '#C2185B', kind: 'main', count_from: 'Planting',
-      stages: [['Germinating', 0], ['Vegetative', 7], ['Ready', 26]], feeds: [], sort: 3 },
+      stages: [['Germinating', 0], ['Vegetative', 7], ['Ready', 26]], feeds: [], harvest_days: 3, sort: 3 },
     { id: 'basil', name: 'Basil', name_sw: 'Basil', color: '#5B3FA8', kind: 'main', count_from: 'Planting',
-      stages: [['Vegetative', 0], ['Ready to cut', 30]], feeds: [], sort: 4 },
+      stages: [['Vegetative', 0], ['Ready to cut', 30]], feeds: [], harvest_days: 60, sort: 4 },
     { id: 'veg', name: "Workers' veg", name_sw: 'Mboga za wafanyakazi', color: '#E8731A', kind: 'other', count_from: 'Planting', stages: [], feeds: [], sort: 10 },
     { id: 'mchicha', name: 'Mchicha', name_sw: 'Mchicha', color: '#E8731A', kind: 'other', count_from: 'Planting', stages: [], feeds: [], sort: 11 },
     { id: 'spinach', name: 'Spinach', name_sw: 'Spinachi', color: '#E8731A', kind: 'other', count_from: 'Planting', stages: [], feeds: [], sort: 12, to_remove: true },
@@ -113,10 +113,11 @@
   ];
 
   SEED.bills = [
-    { name: 'Rent', category: 'Rent', amount: 16800, active: true, note: '', sort: 1 },
-    { name: 'Salary · Joel', category: 'Salaries', amount: 10000, active: true, note: '', sort: 2 },
-    { name: 'Salary · Joshua', category: 'Salaries', amount: 10000, active: true, note: '', sort: 3 },
-    { name: 'Salary · Supervisor', category: 'Salaries', amount: 10000, active: false, note: 'Starts when hired', sort: 4 }
+    { name: 'Rent', category: 'Rent', amount: 16800, active: true, note: '', sort: 1, person: '', kind: 'fixed', start_month: '2026-11' },
+    { name: 'Salary · Joel', category: 'Salaries', amount: 10000, active: true, note: '', sort: 2, person: 'Joel', kind: 'fixed', start_month: '2026-11' },
+    { name: 'Salary · Joshua', category: 'Salaries', amount: 10000, active: true, note: '', sort: 3, person: 'Joshua', kind: 'fixed', start_month: '2026-11' },
+    { name: 'Salary · Supervisor', category: 'Salaries', amount: 10000, active: false, note: 'Starts when hired', sort: 4, person: '', kind: 'fixed', start_month: '2026-11' },
+    { name: 'Water', category: 'Water', amount: 0, active: true, note: 'Read the meter on the 3rd', sort: 5, person: '', kind: 'water', start_month: '2026-11' }
   ];
 
   // Fill in active ingredients and waiting days (pre-harvest interval) from the inputs workbook in the app.
@@ -138,15 +139,26 @@
     { id: 'kipchoge@example.com', name: 'Kipchoge', role: 'Checker', note: 'Checks beds, adds expenses when sent to buy', extra: ['expenses'] },
     { id: 'levi@example.com', name: 'Levi', role: 'Family', note: '' },
     { id: 'joel@example.com', name: 'Joel', role: 'Farm hand', note: '' },
-    { id: 'joshua@example.com', name: 'Joshua', role: 'Farm hand', note: '' }
+    { id: 'joshua@example.com', name: 'Joshua', role: 'Farm hand', note: '' },
+    { id: 'nologin-lamech', name: 'Lamech', role: 'Supervisor', note: 'New manager · no app login yet' }
   ];
+
+  // Same values as supabase/04_update_v6_1.sql (used in demo mode)
+  SEED.water = [{ date: '2026-11-01', reading: 2105, rate: 100, note: 'Starting reading' }];
+  SEED.openingTill = 1.99;
+  SEED.fees = {
+    receive: [[0, 500, 0], [501, 36363, '0.55%'], [36364, 250000, 200]],
+    person: [[0, 100, 0], [101, 500, 4], [501, 1000, 7], [1001, 1500, 12], [1501, 2500, 17], [2501, 3500, 27], [3501, 5000, 29], [5001, 7500, 39], [7501, 10000, 45], [10001, 15000, 50], [15001, 20000, 53], [20001, 250000, 54]],
+    paybill: [[0, 100, 0], [101, 500, 3], [501, 1000, 5], [1001, 1500, 8], [1501, 2500, 10], [2501, 3500, 13], [3501, 5000, 17], [5001, 7500, 21], [7501, 10000, 24], [10001, 15000, 29], [15001, 20000, 31], [20001, 25000, 34], [25001, 30000, 36], [30001, 35000, 42], [35001, 40000, 50], [40001, 45000, 52], [45001, 250000, 54]],
+    till: [[0, 250000, 0]]
+  };
 
   SEED.ROLES = {
     'Admin': ['field', 'edit_beds', 'sales', 'expenses', 'money', 'people'],
     'Supervisor': ['field', 'edit_beds', 'sales', 'expenses'],
     'Checker': ['field', 'edit_beds'],
     'Family': ['money'],
-    'Farm hand': ['field']
+    'Farm hand': ['field', 'sales']
   };
 
   root.SEED = SEED;
