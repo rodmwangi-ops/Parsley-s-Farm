@@ -6,11 +6,15 @@
 <meta name="theme-color" content="#16603A">
 <title>Parsley's Farm</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icons/icon-192.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Parsley Farm">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=6.1.0">
+<link rel="stylesheet" href="css/app.css?v=6.1.1">
 </head>
 <body>
 <div class="app">
@@ -30,11 +34,11 @@
 <datalist id="prodlist"></datalist>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="js/config.js?v=6.1.0"></script>
-<script src="js/layout.js?v=6.1.0"></script>
-<script src="js/seed-data.js?v=6.1.0"></script>
-<script src="js/store.js?v=6.1.0"></script>
-<script src="js/app.js?v=6.1.0"></script>
+<script src="js/config.js?v=6.1.1"></script>
+<script src="js/layout.js?v=6.1.1"></script>
+<script src="js/seed-data.js?v=6.1.1"></script>
+<script src="js/store.js?v=6.1.1"></script>
+<script src="js/app.js?v=6.1.1"></script>
 <script>
   document.getElementById('bdate').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   if ('serviceWorker' in navigator && location.protocol === 'https:') {

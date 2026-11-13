@@ -270,7 +270,7 @@ function renderSales() {
   ${Object.keys(buyers).length ? `<section class="card"><h2>Owed to the farm</h2><div class="list">${Object.entries(buyers).sort((a, b) => b[1] - a[1]).map(([b, v]) => `<div class="li"><span class="tx"><b>${esc(b)}</b></span><span class="amt">${ksh(v)}</span></div>`).join('')}</div></section>` : ''}
   <section class="card"><h2>Sales in ${monthName(m)}</h2>${ms.length ? `<div class="list">${ms.map(saleRow).join('')}</div>` : '<div class="empty-state"><b>No sales this month</b><span>Sales and harvests marked Sold now show up here.</span></div>'}</section>`;
 }
-function saleRow(s) { const c = C(s.crop); return `<button class="li" data-receipt="${s.id}"><span class="ico" style="background:${c.color || '#ccc'};color:${inkFor(c.color || '#cccccc')}">${esc(c.name[0])}</span><span class="tx"><b>${esc(s.receipt_no || 'Number pending')} · ${esc(s.buyer || 'No buyer named')}</b><span>${+s.qty} ${esc(s.unit)} ${esc(c.name)} · ${esc(s.pay_method)} · ${fmtS(s.date)}${saleBal(s) > 0 ? ' · ' + ksh(saleBal(s)) + ' unpaid' : ''}</span></span><span class="amt pos">${ksh(s.total)}</span></button>`; }
+function saleRow(s) { const c = C(s.crop); return `<button class="li" data-receipt="${s.id}"><span class="ico" style="background:${c.color || '#ccc'};color:${inkFor(c.color || '#cccccc')}">${esc(c.name[0])}</span><span class="tx"><b>${esc(s.receipt_no || 'Number pending')} · ${esc(s.buyer || 'No buyer named')}</b><span>${+s.qty} ${esc(s.unit)} ${esc(c.name)} · ${esc(s.pay_method)}${s.sold_by ? ' · sold by ' + esc(s.sold_by) : ''} · ${fmtS(s.date)}${saleBal(s) > 0 ? ' · ' + ksh(saleBal(s)) + ' unpaid' : ''}</span></span><span class="amt pos">${ksh(s.total)}</span></button>`; }
 
 function renderExpenses() {
   if (!st.pinOK) return `<h1>${T('expenses')}</h1><div class="pinbox"><p>Enter the Expenses PIN</p><input type="password" inputmode="numeric" autocomplete="off" id="f-pin" maxlength="8" aria-label="PIN"><div class="err" id="pinerr"></div><button class="btn primary" data-act="unlock">Unlock</button>${Store.demo ? '<p class="muted">Demo PIN: 1234</p>' : ''}</div>`;
@@ -434,6 +434,7 @@ const saleFields = (pre) => `<div class="field"><label for="f-price">Price per u
     <div class="total"><span>Total</span><b id="tot">KSh 0</b></div>
     <div class="field"><label for="f-buyer">Buyer <em>optional</em></label><input type="text" id="f-buyer" list="buyerlist" placeholder="Mama Wanjiru, Kitengela market" value="${esc(pre && pre.buyer || '')}"></div>
     <div class="field"><span class="lab">Payment</span>${chips('pay', [['Cash', 'Cash'], ['M-Pesa', 'M-Pesa (till)'], ['Credit', 'Credit']], pre && pre.pay_method || 'M-Pesa')}</div>
+    <div class="field"><span class="lab">Sold by <em>who handed over the produce</em></span>${chips('soldby', people().map(p => [p.name, p.name]), pre && pre.sold_by || '')}</div>
     ${pre && pre.id ? '' : `<div class="field" id="paidbox" hidden><label for="f-paid">Paid now (KSh) <em>part-payment</em></label><input type="number" id="f-paid" min="0" step="1" value="0">${chips('paidhow', [['M-Pesa', 'M-Pesa'], ['Cash', 'Cash']], 'M-Pesa')}</div>`}`;
 function saleHook() { const pb = q('#paidbox'); if (pb) pb.hidden = val('pay') !== 'Credit'; q('#tot').textContent = ksh((+q('#f-qty').value || 0) * (+q('#f-price').value || 0)); }
 function harvestSheet() {
@@ -472,7 +473,7 @@ function receiptText(s) { return `Parsley's Farm\nReceipt ${s.receipt_no || '(nu
 function receiptSheet(id) {
   const s = D.sales[id], bal = saleBal(s);
   openSheet(head(`Receipt ${esc(s.receipt_no || '(number pending)')}`) + `<div class="receipt"><div class="r"><b>Parsley's Farm</b><span>${fmtLong(s.date)}</span></div><div class="r"><span>Buyer</span><b>${esc(s.buyer || 'Not named')}</b></div>
-  <div class="r"><span>${+s.qty} ${esc(s.unit)} ${esc(C(s.crop).name)} × ${ksh(s.price)}</span><b>${ksh(s.total)}</b></div>${s.lot ? `<div class="r"><span>Harvest lot</span><b>${esc(s.lot)}</b></div>` : ''}
+  <div class="r"><span>${+s.qty} ${esc(s.unit)} ${esc(C(s.crop).name)} × ${ksh(s.price)}</span><b>${ksh(s.total)}</b></div>${s.lot ? `<div class="r"><span>Harvest lot</span><b>${esc(s.lot)}</b></div>` : ''}${s.sold_by ? `<div class="r"><span>Sold by</span><b>${esc(s.sold_by)}</b></div>` : ''}
   ${(s.payments || []).map(p => `<div class="r"><span>Paid ${fmtS(p.date)} (${esc(p.how)})</span><span>${ksh(p.amt)}</span></div>`).join('')}${can('money') && (s.payments || []).some(p => payFee(p)) ? `<div class="r"><span>M-Pesa charges to the till</span><span>${kshD((s.payments || []).reduce((a, p) => a + payFee(p), 0))}</span></div>` : ''}<div class="r"><span>Balance</span><span class="big">${ksh(bal)}</span></div></div>
   <div class="two"><button class="btn" data-act="copyrc">Copy receipt</button><button class="btn" data-act="printrc">Print</button></div>
   ${can('sales') && bal > 0 ? `<h3>Record a payment</h3><div class="two"><div class="field"><label for="f-pay">Amount (KSh)</label><input type="number" id="f-pay" min="1" step="1" value="${Math.round(bal)}"></div><div class="field"><span class="lab">How</span>${chips('how', [['Cash', 'Cash'], ['M-Pesa', 'M-Pesa']], 'M-Pesa')}</div></div>${ERR}<button class="btn primary" data-act="addpay">Save payment</button>` : bal <= 0 ? '<p class="note">Fully paid.</p>' : ''}
@@ -568,7 +569,7 @@ function buildReport(type, m) {
     return { title: `Harvest lots and sales · ${monthName(m)}`, cols: ['Date', 'Lot', 'Where', 'Beds', 'Harvest', 'Went to', 'Receipt', 'Buyer', 'Harvested by'], rows };
   }
   const rows = [];
-  live('sales').forEach(s => (s.payments || []).filter(p => inMonth(p.date, m)).forEach(p => rows.push([p.date, 'Sale received', `Sale ${s.receipt_no || ''} · ${+s.qty} ${s.unit} ${C(s.crop).name}`, s.buyer, p.how, +p.amt, '', payFee(p) || ''])));
+  live('sales').forEach(s => (s.payments || []).filter(p => inMonth(p.date, m)).forEach(p => rows.push([p.date, 'Sale received', `Sale ${s.receipt_no || ''} · ${+s.qty} ${s.unit} ${C(s.crop).name}${s.sold_by ? ' · sold by ' + s.sold_by : ''}`, s.buyer, p.how, +p.amt, '', payFee(p) || ''])));
   live('expenses').filter(e => inMonth(e.date, m)).forEach(e => rows.push([e.date, 'Expense', `${e.category}: ${(e.lines || []).map(l => `${l.item} (${l.amt})`).join(', ')}`, e.payee || e.supplier || e.paid_by, { till: 'M-Pesa till', cash: 'Cash', personal: 'Own money (' + (e.paid_by || '') + ')' }[e.paid_from || 'till'], '', +e.total, (e.paid_from || 'till') === 'till' ? (+e.fee || '') : '']));
   live('money_moves').filter(x => inMonth(x.date, m) && !x.kind.startsWith('adjust')).forEach(x => rows.push([x.date, MOVE_LABEL[x.kind], x.note || '', x.person, '', x.kind === 'topup' ? +x.amount : '', '', +x.fee || '']));
   rows.sort((a, b) => a[0].localeCompare(b[0]));
@@ -648,7 +649,7 @@ const SAVE = {
     if (de === 'sell') {
       const p = +q('#f-price').value; if (!p || p <= 0) return err('Enter the price per unit, or choose Store or Home use.');
       const pay = val('pay'); const paidNow = pay === 'Credit' ? Math.max(0, +q('#f-paid').value || 0) : qt * p; if (paidNow > qt * p) return err('Paid now is more than the total.');
-      saleId = newSale({ crop: c, qty: qt, unit: u, price: p, buyer: q('#f-buyer').value.trim(), pay, paidNow, paidHow: val('paidhow'), farm: st.farm, lot, date: d }); det += ` · ${ksh(qt * p)}`;
+      saleId = newSale({ crop: c, qty: qt, unit: u, price: p, buyer: q('#f-buyer').value.trim(), pay, paidNow, paidHow: val('paidhow'), soldBy: val('soldby'), farm: st.farm, lot, date: d }); det += ` · ${ksh(qt * p)}`;
     }
     if (de === 'store') { const id = c + '|' + u; const it = D.store_items[id] || { id, crop: c, unit: u, qty: 0, lot: '' }; save('store_items', { ...it, qty: (+it.qty || 0) + qt, lot }); }
     mkRecord('harvest', `Harvested ${qt} ${u} ${D.crops[c].name.toLowerCase()} · ${lot}`, det + (fin ? ' · beds cleared, lines rolled up' : ''), selWhere(), selKeys(), d, val('by'), { data: { lot, crop: c, qty: qt, unit: u, dest: de, sale_id: saleId } });
@@ -662,12 +663,12 @@ const SAVE = {
       const s = ctx.sale; const total = qt * p; if (salePaid(s) > total) return err(`${ksh(salePaid(s))} has already been paid, more than the new total.`);
       let payments = s.payments || []; if (pay !== 'Credit' && s.pay_method === 'Credit' && salePaid(s) < total) payments = [...payments, mkPay(today(), total - salePaid(s), pay)];
       if (pay !== 'Credit' && s.pay_method !== 'Credit') payments = [mkPay(getDate(), total, pay)];
-      save('sales', { ...s, crop: c, qty: qt, unit: u, price: p, total, buyer: q('#f-buyer').value.trim(), pay_method: pay, farm: val('farm'), date: getDate(), payments });
+      save('sales', { ...s, crop: c, qty: qt, unit: u, price: p, total, buyer: q('#f-buyer').value.trim(), pay_method: pay, sold_by: val('soldby'), farm: val('farm'), date: getDate(), payments });
       toast('Sale updated'); receiptSheet(s.id); return;
     }
     if (ctx.store) { const it = D.store_items[ctx.store.id]; if (qt > +it.qty) return err(`Only ${+it.qty} ${it.unit} in store.`); save('store_items', { ...it, qty: +it.qty - qt }); }
     const paidNow = pay === 'Credit' ? Math.max(0, +q('#f-paid').value || 0) : qt * p; if (paidNow > qt * p) return err('Paid now is more than the total.');
-    newSale({ crop: c, qty: qt, unit: u, price: p, buyer: q('#f-buyer').value.trim(), pay, paidNow, paidHow: val('paidhow'), farm: val('farm'), lot: ctx.store ? ctx.store.lot : '', date: getDate() });
+    newSale({ crop: c, qty: qt, unit: u, price: p, buyer: q('#f-buyer').value.trim(), pay, paidNow, paidHow: val('paidhow'), soldBy: val('soldby'), farm: val('farm'), lot: ctx.store ? ctx.store.lot : '', date: getDate() });
     toast('Sale saved'); closeSheet();
   },
   saveExpense() {
@@ -713,7 +714,7 @@ const SAVE = {
 const mkPay = (date, amt, how) => ({ date, amt, how, fee: how === 'M-Pesa' ? feeFor('receive', amt) : 0 });
 function newSale(o) {
   const id = Store.uid();
-  save('sales', { id, receipt_no: Store.demo ? 'PF-' + String(live('sales').length + 1).padStart(4, '0') : null, date: o.date, crop: o.crop, qty: o.qty, unit: o.unit, price: o.price, total: o.qty * o.price, buyer: o.buyer, pay_method: o.pay, farm: o.farm, lot: o.lot || '', payments: o.paidNow > 0 ? [mkPay(o.date, o.paidNow, o.pay === 'Credit' ? (o.paidHow || 'M-Pesa') : o.pay)] : [], deleted: false, created_by: EMAIL });
+  save('sales', { id, receipt_no: Store.demo ? 'PF-' + String(live('sales').length + 1).padStart(4, '0') : null, date: o.date, crop: o.crop, qty: o.qty, unit: o.unit, price: o.price, total: o.qty * o.price, buyer: o.buyer, pay_method: o.pay, farm: o.farm, lot: o.lot || '', sold_by: o.soldBy || '', payments: o.paidNow > 0 ? [mkPay(o.date, o.paidNow, o.pay === 'Credit' ? (o.paidHow || 'M-Pesa') : o.pay)] : [], deleted: false, created_by: EMAIL });
   return id;
 }
 function newBedRow(blk, num, extra) { return Object.assign({ id: `${blk.farm}|${blk.code}|b${Store.uid().slice(0, 8)}`, farm: blk.farm, block: blk.code, num, crop: 'empty', plant_date: null, approx: false, note: '', drip: null, poor: false, needs_check: false, seedbed: false, feeds_done: [], active: true, checked_at: null, checked_by: '' }, extra || {}); }
@@ -822,7 +823,7 @@ function renderPlan() {
       if (clear && days <= 14) soon.push({ blk, i, s, clear, days, next, label });
       rows += `<div class="li planrow"><span class="tx"><b>${label} · beds ${s[0]}–${s[1]}</b>
         <span>${Object.keys(counts).length ? Object.entries(counts).map(([c, k]) => `${esc(C(c).name)} ${k}`).join(' · ') : 'Nothing growing'}${beds.length - growing.length ? ` · ${beds.length - growing.length} empty or long-term` : ''}</span>
-        <span>${first && growing.length ? `First ready about ${fmt(first)} · ` : ''}${clear ? (days <= 0 ? '<b>Clear now</b>' : `Clear by about <b>${fmt(clear)}</b>`) : `<b>Clear date unknown</b>: ${unknown.length} bed${unknown.length > 1 ? 's' : ''} need a stage (${rangeText(unknown.map(b => b.num))})`}</span>
+        <span>${first && growing.length ? `First ready about ${fmt(first)} · ` : ''}${clear ? (days <= 0 ? '<b>Clear now</b>' : `Clear by about <b>${fmt(clear)}</b>`) : `<b>Clear date unknown</b>: ${unknown.length} bed${unknown.length > 1 ? 's need' : ' needs'} a stage (${rangeText(unknown.map(b => b.num))})`}</span>
         <span class="muted">${checked ? 'Last checked ' + fmtS(checked) : 'Not surveyed yet'}</span></span>
         <span class="planact"><span class="pill ${info.kind}">${esc(info.label)}</span>${can('edit_beds') ? `<button class="mini" data-nextcrop="${blk.code}|${i}">Next: ${next ? esc(C(next).name) : 'set'}</button>` : `<span class="muted">Next: ${next ? esc(C(next).name) : 'not set'}</span>`}</span></div>`;
     });

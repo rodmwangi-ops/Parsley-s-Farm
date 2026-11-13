@@ -176,3 +176,13 @@ v6.1 adds the bed survey, adding and removing beds, the Plan view, the M-Pesa ti
    **Don't upload `js/config.js`**: yours holds your Supabase settings.
 3. Wait 1 to 2 minutes, then open the app and pull down to refresh, or close and reopen it. **More** should show version 6.1.0.
 4. In the app: **Expenses** → **Update balances**, and type the till's real balance so it starts from the right figure.
+
+## Updating to v6.1.1
+
+1. In Supabase, run `supabase/05_update_v6_1_1.sql` (adds "Sold by" to sales). **Do this before uploading the files**, or new sales will be refused.
+2. Upload to GitHub:
+   - `index.html`, `sw.js`, `manifest.json` and `_config.yml` into the main folder
+   - the whole `icons` folder
+   - `js/app.js` into the `js` folder
+   - `supabase/05_update_v6_1_1.sql` into the `supabase` folder
+3. On Android, open the app in Chrome. The menu (⋮) should now show **Install app** or **Add to Home screen**. If it doesn't, close the tab, reopen the link and wait a few seconds. On a laptop, look for the install icon at the right of the address bar.
