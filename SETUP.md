@@ -186,3 +186,11 @@ v6.1 adds the bed survey, adding and removing beds, the Plan view, the M-Pesa ti
    - `js/app.js` into the `js` folder
    - `supabase/05_update_v6_1_1.sql` into the `supabase` folder
 3. On Android, open the app in Chrome. The menu (⋮) should now show **Install app** or **Add to Home screen**. If it doesn't, close the tab, reopen the link and wait a few seconds. On a laptop, look for the install icon at the right of the address bar.
+
+## Updating to v6.1.2
+
+Fixes the app hanging on "Loading the farm…". If something stops the farm loading, the app now shows the reason and a Try again button. If a database table is missing, it loads everything else and says which table is missing.
+
+1. Upload `index.html`, `sw.js`, `js/app.js` and `js/store.js` (and `icons/`, `manifest.json`, `_config.yml` if they aren't on GitHub yet). Don't replace `js/config.js`.
+2. In Supabase → SQL Editor, run `supabase/04_update_v6_1.sql` and then `supabase/05_update_v6_1_1.sql`. Both are safe to run again.
+3. On the phone, close the app fully and open it again.

@@ -87,6 +87,7 @@ const Store = (() => {
   const saveCache = (t, rowsById) => idb.set('t:' + t, rowsById);
 
   // ---------- pull from Supabase ----------
+  const missing = [];
   async function fetchAll(t, since) {
     const rows = [];
     for (let from = 0; ; from += 1000) {
@@ -102,12 +103,17 @@ const Store = (() => {
   // Returns {table: [changed rows]} or null when offline / demo.
   async function pull(full) {
     if (demo || !navigator.onLine) return null;
-    const out = {};
+    const out = {}; missing.length = 0;
     for (const t of TABLES) {
       const since = full ? null : lastPull[t];
       // Ask for a little overlap so a row saved during the last pull isn't missed.
       const sinceAdj = since ? new Date(new Date(since).getTime() - 120000).toISOString() : null;
-      out[t] = await fetchAll(t, sinceAdj);
+      try { out[t] = await fetchAll(t, sinceAdj); }
+      catch (e) {
+        // A table the database doesn't have yet (an SQL update not run): load the rest, report it.
+        if (/42P01|PGRST205/.test(e.code || '') || /does not exist|schema cache/i.test(e.message || '')) { missing.push(t); out[t] = []; continue; }
+        throw e;
+      }
       const max = out[t].reduce((m, r) => (r.updated_at > m ? r.updated_at : m), since || '');
       if (max) lastPull[t] = max;
     }
@@ -199,5 +205,5 @@ const Store = (() => {
   }
 
   return { demo, init, session, sendCode, verifyCode, signInPassword, setPassword, onAuth, signOut, loadCache, saveCache, pull, pendingIds, put, flush, status, on,
-    retryFailed, discardFailed, checkPin, setPin, uploadPhoto, uid, TABLES };
+    retryFailed, discardFailed, checkPin, setPin, uploadPhoto, uid, TABLES, missing };
 })();

@@ -116,5 +116,4 @@ insert into public.money_moves (date, kind, amount, note, created_by)
 select '2026-11-12', 'adjust_till', 1.99, 'Opening balance', 'setup'
 where not exists (select 1 from public.money_moves);
 
--- Farm hands record sales too
-update public.people set perms = array_append(perms, 'sales') where role = 'Farm hand' and not ('sales' = any(perms));
+-- (Sales permission for farm hands is set per person under More -> People and access.)

@@ -1042,6 +1042,7 @@ document.addEventListener('click', async e => {
   else if (act === 'retryfail') { Store.retryFailed(); syncSheet(); }
   else if (act === 'discardfail') { if (!confirmTap(a, 'Tap again to discard')) return; Store.discardFailed(); syncSheet(); }
   else if (act === 'refresh') { a.textContent = 'Refreshing…'; await refresh(true); toast('Up to date'); syncSheet(); }
+  else if (act === 'retryload') retryLoad();
   else if (act === 'signout') { if (!confirmTap(a, 'Tap again to sign out')) return; await Store.signOut(); location.reload(); }
   else if (act === 'pwlogin') pwLogin();
   else if (act === 'showcode') { document.getElementById('codebox').hidden = false; a.hidden = true; }
@@ -1158,14 +1159,26 @@ async function refresh(full) {
     ME = D.people[EMAIL] && D.people[EMAIL].active !== false ? D.people[EMAIL] : null;
     if (!ME) { showNoAccess(); return; }
     if (sheet.hidden) render(); else syncPill();
-  } catch (e) { console.warn('Refresh failed', e); syncPill(); }
+    if (Store.missing.length && !warnedMissing) { warnedMissing = true; setTimeout(() => toast(`The database is missing ${Store.missing.join(', ')}. Run the latest SQL update in Supabase.`), 300); }
+    return null;
+  } catch (e) { console.warn('Refresh failed', e); syncPill(); return e; }
+}
+let warnedMissing = false;
+function showLoadError(e) {
+  const msg = (e && (e.message || e.error_description || e.code)) || 'Unknown error';
+  document.getElementById('main').innerHTML = `<div class="empty-state"><b>The farm could not load</b><span>${esc(msg)}</span><span>Check the signal and try again. If this keeps happening, send this message to Rod.</span><button class="btn primary" data-act="retryload">Try again</button><button class="btn" data-act="signout">Sign out</button></div>`;
+}
+async function retryLoad() {
+  document.getElementById('main').innerHTML = '<div class="empty-state"><b>Loading the farm…</b></div>';
+  const e = await refresh(true); if (e && !ME) showLoadError(e);
 }
 async function start(email) {
   if (started) return; started = true; EMAIL = email.toLowerCase();
   const cache = await Store.loadCache(); Object.keys(cache).forEach(t => { if (cache[t]) D[t] = cache[t]; }); bedIdx = null;
   ME = D.people[EMAIL] && D.people[EMAIL].active !== false ? D.people[EMAIL] : null;
   if (ME) render(); else document.getElementById('main').innerHTML = '<div class="empty-state"><b>Loading the farm…</b></div>';
-  await refresh(!cache.beds);
+  const loadErr = await refresh(!cache.beds);
+  if (loadErr && !ME) showLoadError(loadErr);
   if (!ME && !navigator.onLine) document.getElementById('main').innerHTML = '<div class="empty-state"><b>Connect once to load the farm</b><span>After that, the app works without signal.</span></div>';
   Store.flush();
   setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, 60000);
